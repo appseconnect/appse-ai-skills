@@ -1,0 +1,25 @@
+{
+  "name": "appse-partner-catalog",
+  "description": "appse ai Partner Accelerator — skills for implementation partners building workflows on appse ai",
+  "owner": { "name": "appse ai", "email": "eng@appse.ai" },
+  "plugins": [
+    {
+      "name": "appse-partner",
+      "version": "0.1.0",
+      "category": "productivity",
+      "source": {
+        "source": "github",
+        "repo": "appseconnect/appse-ai-skills",
+        "branch": "partner-accelerator-poc"
+      },
+      "description": "appse ai Partner Accelerator — skills that help implementation partners scope and build customer workflows faster, across apps they don't know deeply.",
+      "keywords": [
+        "partner",
+        "workflow",
+        "integration",
+        "automation",
+        "scoping"
+      ]
+    }
+  ]
+}
