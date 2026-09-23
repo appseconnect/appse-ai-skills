@@ -36,6 +36,19 @@ now while this is internal/POC, but this plugin is meant to eventually be instal
 external partners — decide on a real owner/support address before any external
 distribution.
 
+**KNOWN BUG, fix before the end-to-end re-test:** all three manifests —
+`.claude-plugin/plugin.json`, `.cursor-plugin/plugin.json`, and
+`.claude-plugin/marketplace.json` (indirectly, via the plugin source) — still list
+`skills[]` as `["./skills/partner-init"]`. That folder no longer exists; only
+`skills/workflow-creator/` is on disk (renamed during the `partner-init` → real-skill
+rewrite). Running the skill directly inside this project folder still works (Claude
+Code picks up `skills/` by scanning the folder, not via the manifest), which is why
+this went unnoticed — but **installing this as a packaged plugin** (the actual
+distribution path, and part of what this POC is meant to prove) would fail to find any
+declared skill. Update all three manifests' `skills[]` entries to
+`["./skills/workflow-creator"]` before doing any plugin-install test, and before
+relying on this repo as "done" for that path.
+
 ## Technical architecture (confirmed working)
 - **Claude** reasons and follows Skill instructions; has no direct platform access on
   its own.
@@ -128,12 +141,22 @@ claude mcp add-json --scope project context7 "{\"type\":\"stdio\",\"command\":\"
   one-trigger, one-action shape; treat anything with branching/multiple
   actions/approval gates as higher-risk until separately verified.
 
-**Known cleanup item:** an empty stub workflow, `Workflow 12`
-(`f9e89e78-d060-4342-afc2-84b220f11794`), was created in an earlier test org ("Build
-Verification Org") and never completed/saved. Delete via the appse ai UI if unneeded —
-no arise-mcp tool in this skill can delete a workflow. We've since switched orgs for
-testing — confirm the correct org before any new run (the skill always re-asks per run
-by design; never assume the last-used org).
+**Note on org switching:** arise-mcp's login is per-organization — whichever email
+authenticates it determines which single org is visible in that session, not multiple
+orgs at once. Earlier testing used one org (where "Workflow 12" below lives); current
+testing uses a different org, **Build Verification Org**
+(`d06d36cf-9579-45f1-bf32-bd24cc0c879b`), reached via a different login. Don't expect
+workflows or data from a previous org to appear once arise-mcp has been re-authorized
+into a different one — check which org is active (`list_organizations`) rather than
+assuming continuity across sessions.
+
+**Known cleanup item (scoped to a prior org, not the current one):** an empty stub
+workflow, `Workflow 12` (`f9e89e78-d060-4342-afc2-84b220f11794`), was created in an
+earlier test org and never completed/saved. It does **not** appear in Build
+Verification Org's workflow list — this is expected (different org), not a sign it was
+deleted or that `list_workflows` is missing data. No action needed unless/until
+testing returns to that original org; if so, delete it via the appse ai UI — no
+arise-mcp tool in this skill can delete a workflow.
 
 ## Guardrails established so far (apply to every future skill, not just this one)
 
@@ -165,6 +188,15 @@ by design; never assume the last-used org).
 `list_organizations`, `list_apps`, `list_operations`, `get_operation_detail`,
 `list_credentials`, `list_workflows`, `get_workflow` (scoped: reference workflow only),
 `create_workflow`, `save_workflow`
+
+## Immediate next actions, in order
+1. Fix the `skills[]` manifest bug above (all three files) — quick, but blocks a
+   correct plugin-install test.
+2. Run `workflow-creator` end-to-end on the confirmed test scenario (see POC status
+   above).
+3. Only then, if you want to validate the packaged-plugin path specifically (not just
+   running the skill directly): try an actual plugin install using the fixed
+   manifests, and confirm `workflow-creator` is discovered correctly.
 
 ## After the end-to-end re-test
 Design the next real skill (candidates from the design doc: Requirement Digest, SOW
