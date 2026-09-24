@@ -150,6 +150,16 @@ workflows or data from a previous org to appear once arise-mcp has been re-autho
 into a different one — check which org is active (`list_organizations`) rather than
 assuming continuity across sessions.
 
+**Resolved: arise-mcp writes are not affected by `workflow.insync.top` (the UI) being
+down.** Confirmed with dev: arise-mcp writes directly to the same backing database the
+UI reads from — no caching, no separation. During a real `workflow.insync.top` outage
+(hit live during testing — `DNS_PROBE_FINISHED_NXDOMAIN`), arise-mcp reads/writes
+continued working normally (confirmed via `list_workflows` returning current,
+non-stale data). Practical implication: a workflow built via a skill during a UI
+outage is safely persisted — the outage only delays the human's ability to visually
+verify it in the UI, it does not put the build itself at risk. `SKILL.md` Step 11's
+final report line reflects this (verify "once reachable," not "verify now").
+
 **Known cleanup item (scoped to a prior org, not the current one):** an empty stub
 workflow, `Workflow 12` (`f9e89e78-d060-4342-afc2-84b220f11794`), was created in an
 earlier test org and never completed/saved. It does **not** appear in Build

@@ -205,7 +205,7 @@ trigger and action.
 ### Step 11 — Report Back Plainly
 State: workflow name and ID, exact trigger and action used, every field mapping
 applied, and which mappings were assumptions, unconfirmed, or docs-confirmed.
-This is what the user checks against the appse ai UI. If this was one of
+This is what the user checks against the appse ai UI once it's reachable — the build itself is safely persisted to the database regardless of UI availability, so a UI outage delays verification, not the build's validity. If this was one of
 several workflows from Step 0, also report progress against the full set
 (e.g. "2 of 4 built so far").
 
