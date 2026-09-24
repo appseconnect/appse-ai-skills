@@ -388,9 +388,15 @@ those mappings "not cross-checked against documentation".
   as numbers, not text — source apps like Shopify return prices as text
   (`"100.00"`). Wrap them with the documented `to_number()`, e.g.
   `{{to_number($('Has SKU').payload.price)}}`, and give numeric constants as
-  `{{to_number('1')}}`. A type mismatch makes the target reject the whole
-  record with a generic error (SAP B1: "BadRequest request body data is
-  invalid" — Workflow 18, 2026-09-24).
+  `{{to_number('1')}}`, matching the types in the target's real records.
+- **Codes must exist in the target system.** A code field (currency,
+  warehouse, tax code, price list) must use a value that's actually defined
+  in that system — not the general name. Confirmed failure (Workflow 18,
+  2026-09-24): SAP B1 rejected items with `Currency: "USD"` — "BadRequest
+  request body data is invalid" — because that company's dollar code is
+  `"$"`. When you ask the partner for such a setting, ask for the exact code
+  as defined in the target (e.g. SAP: Administration → Setup → Financials →
+  Currencies), and check a real record's value in the docs first.
 - **Company-specific settings** (currency, price list, warehouse, item
   group, tax/VAT code, posting group, number series, company, sales channel)
   are **never** copied from a reference or guessed: source field → a lookup
