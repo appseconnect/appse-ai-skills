@@ -713,7 +713,17 @@ re-check; report anything still wrong — do not tell the partner the build
 is complete.
 
 ### Step 11 — Report Back Plainly
-State: workflow name and ID, exact trigger and action used, every field
+**Lead with a clickable link to open the workflow** in the appse ai
+editor, built from the workflow ID returned by `create_workflow`:
+
+> **Open it here:** https://workflow.insync.top/workflows/{workflowId}/editor
+
+Use the real ID, as a full clickable URL (not just the ID). If several
+workflows were built from Step 0, give one link per workflow, each labelled
+with what it does. Give the same link again whenever you later update that
+workflow (e.g. after a mapping change).
+
+Then state: workflow name and ID, exact trigger and action used, every field
 mapping applied, and which mappings were documentation-confirmed,
 unconfirmed, or **proposed by you** (Step 6 rungs 2–4). Repeat the proposed
 ones as a short list with their reasons, and close with: _"If any of these
@@ -884,6 +894,11 @@ conversation.)*
   actual threshold. Revisit once builds with heavier branching have real
   runs to measure.
 - No arise-mcp tool currently exposes remaining workflow allocation/quota.
+- **Workflow link base URL is hardcoded** to `https://workflow.insync.top`
+  (the environment used in testing). The tools only return relative links
+  (e.g. `/workflows/{id}/...`). Confirm the production portal URL before
+  partners use this, and update Step 11 — or make it configurable per
+  environment.
 - **Tool-approval prompt volume**: a project-level `settings.json` now
   pre-approves all read-only arise-mcp and Context7 tools, plus
   `save_workflow` (added 2026-09-24 at the team's request — saving follows
@@ -908,6 +923,9 @@ conversation.)*
   events; explain why and propose the correct split instead of complying.
 - Always re-resolve `org_id` every run — never assume the last-used org still
   applies.
+- Always give a clickable link to open each workflow built or updated
+  (`https://workflow.insync.top/workflows/{workflowId}/editor`) at the top of
+  the Step 11 report.
 - Always review the design as an integration expert before Step 9 (see
   Think Like an Integration Expert) — empty keys, weak matches, how many
   records a write can touch, what the first run picks up, overwrites,
