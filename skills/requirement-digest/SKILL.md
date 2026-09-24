@@ -2,10 +2,12 @@
 name: requirement-digest
 description: >
   Turns messy discovery-call material — transcripts, notes, emails — into a
-  structured, confidence-tagged scoping digest via arise-mcp app-catalog
-  cross-checks. Use for "summarize this call," "digest these notes," "turn
-  this into requirements," or proactively for a pre-call checklist before a
-  discovery call. Always leads with a readiness signal, always tags every
+  structured, confidence-tagged scoping digest (shown to partners as the
+  "Discovery Summary") via arise-mcp app-catalog cross-checks. Use for
+  "summarize this call," "digest these notes," "write a discovery summary,"
+  "turn this into requirements," or — before a discovery call has happened —
+  for a Call Prep Checklist ("what should I ask on my call?", "help me prepare
+  for a discovery call"). Always leads with a readiness signal, always tags every
   fact as stated or inferred, and always merges into an existing digest for
   the same deal rather than duplicating it. Not for writing the SOW,
   estimate, or proposal — those are separate downstream skills that consume
@@ -30,6 +32,35 @@ happening.
 
 ---
 
+## Partner-Facing Language
+
+"Requirement Digest" is this skill's internal name, not an industry term — a
+partner seeing it cold won't know what it is or that the SOW step depends
+on it. In **everything the partner sees**, use plain language instead:
+
+| Internal term (skill/pipeline only)       | Say this to the partner                     |
+| ----------------------------------------- | ------------------------------------------- |
+| Requirement Digest / digest               | Discovery Summary                           |
+| `summary` mode (digest path, Steps 1–9)   | Discovery Summary — "after the call"        |
+| `call-prep` mode (Step 10)                | Call Prep Checklist — "before the call"     |
+| Readiness signal                          | Ready to scope?                             |
+| Vocabulary map                            | Customer's terms                            |
+| Vertical signals                          | Industry signals                            |
+
+Never say "digest", "pre-call", or "mode" to the partner. When telling them
+which path you're taking, use plain phrasing, e.g.:
+
+- _"Sounds like the call hasn't happened yet, so I'll put together a **Call
+  Prep Checklist**: what to prepare and what to ask."_
+- _"I'll turn these call notes into a **Discovery Summary**: what the
+  customer needs, what's confirmed vs. assumed, and what to follow up on."_
+
+The skill name (`requirement-digest`) and the field order stay unchanged,
+since downstream skills (e.g. `sow-generator`) parse this output. Only the
+labels shown to the partner change.
+
+---
+
 ## Tool Reference (arise-mcp, read-only)
 
 This skill's only tool dependency is `list_apps`, used once, in Step 4, to
@@ -50,7 +81,12 @@ downstream of this one's output.
 A compact worked digest, to check output shape against — not a template
 whose specific facts should appear in an unrelated deal:
 
-> **Readiness: Scope with caveats**
+> **Discovery Summary — [account name]**
+>
+> _[Stated] = the customer said it · [Inferred] = our assumption, confirm
+> before committing · [Missing] = not discussed_
+>
+> **Ready to scope? Scope with caveats**
 >
 > 1. **Apps Involved:** Shopify [Stated, source] → SAP Business One [Stated,
 >    > destination, catalog code `sapbusinessone`]
@@ -62,11 +98,14 @@ whose specific facts should appear in an unrelated deal:
 > 4. **Volumes:** ~150 orders/day [Stated]
 > 5. **Constraints:** Must go live before their Q4 peak season [Stated]; no
 >    stated compliance constraints [Missing — not discussed]
-> 6. **Vocabulary map:** "our web store" → Shopify; "the SAP guy's system" →
+> 6. **Customer's terms:** "our web store" → Shopify; "the SAP guy's system" →
 >    SAP Business One
-> 7. **Vertical signals:** eCommerce/retail terminology (SKU, fulfillment)
+> 7. **Industry signals:** eCommerce/retail terminology (SKU, fulfillment)
 > 8. **Open Questions:** "Do you need a business-partner record created
 >    automatically for new customers, or do those already exist in SAP?"
+>
+> **Next:** say "draft a SOW from this" to turn this summary into a Scope of
+> Work.
 
 ---
 
@@ -75,7 +114,7 @@ whose specific facts should appear in an unrelated deal:
 | Field                | Required | Source                                                                               | Description                                                                                              | Default                           |
 | -------------------- | -------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | --------------------------------- |
 | `discovery_material` | ✅       | User provides                                                                        | Raw call transcript, notes, emails, or chat export from a sales discovery conversation                   | —                                 |
-| `mode`               | ⬜       | User states, or inferred from phrasing ("what should I ask" vs. "here are my notes") | `digest` (turn material into a scoping digest) or `pre-call` (produce a checklist before a call happens) | `digest`                          |
+| `mode`               | ⬜       | User states, or inferred from phrasing ("what should I ask" vs. "here are my notes") | `summary` (after the call: turn material into a Discovery Summary) or `call-prep` (before the call: produce a Call Prep Checklist) | `summary`                         |
 | `existing_digest`    | ⬜       | User provides, if this is a second-or-later call for the same deal                   | A previously-generated digest for this deal, to merge into rather than duplicate                         | none — treat as the first call    |
 | `org_id`             | ⬜       | User confirms, only if app cross-checking is wanted                                  | Which appse ai org's app catalog to check named apps against via `list_apps`                             | skip the cross-check if not given |
 
@@ -85,12 +124,13 @@ whose specific facts should appear in an unrelated deal:
 
 Follow these steps in order. Do not skip or reorder.
 
-### Step 0 — Determine Which Mode Applies
+### Step 0 — Before or After the Call?
 
-If `mode` is `pre-call` (or the user is asking what to prepare/ask before a
+If `mode` is `call-prep` (or the user is asking what to prepare/ask before a
 call rather than pasting material from one that already happened), skip
-directly to **Step 10**. Otherwise, proceed through Steps 1–9 for the main
-digest path.
+directly to **Step 10** (Call Prep Checklist). Otherwise, proceed through
+Steps 1–9 to produce the Discovery Summary. Tell the partner which one
+you're doing in plain words (see Partner-Facing Language).
 
 ### Step 1 — Assess Input Sufficiency
 
@@ -190,22 +230,37 @@ versus Missing, assign one of:
 
 ### Step 9 — Present the Digest
 
-Lead with the Step 8 readiness signal, then the five confidence-tagged
-fields (Step 3, cross-checked per Step 4), the vocabulary map (Step 5),
-vertical signals (Step 6), and Open Questions as ready-to-send follow-ups
-(Step 7). If this was a merge (Step 2), show what changed from the prior
-digest, not just the final state. Tight, scannable sections — this is read
-quickly by a human and parsed by the next skill in the pipeline, not read
-as a narrative. Length scales with the input, not a fixed template length.
+Title it **Discovery Summary — [account name]** and use the partner-facing
+labels from the Partner-Facing Language section throughout. In order:
 
-### Step 10 — Build the Pre-Call Checklist (pre-call mode only)
+1. The tag legend, verbatim, directly under the title: _"[Stated] = the
+   customer said it · [Inferred] = our assumption, confirm before
+   committing · [Missing] = not discussed"_
+2. **Ready to scope?** — the Step 8 readiness signal
+3. The five confidence-tagged fields (Step 3, cross-checked per Step 4)
+4. **Customer's terms** (Step 5), **Industry signals** (Step 6), and Open
+   Questions as ready-to-send follow-ups (Step 7)
+5. A closing next-step line: _"Next: say 'draft a SOW from this' to turn
+   this summary into a Scope of Work."_ If the readiness signal is **Needs
+   a follow-up call**, make the next step sending the Open Questions
+   instead, and say the SOW should wait.
 
-Entry point from Step 0 when no call has happened yet. Give a short,
-targeted checklist of what to prepare or ask, based on whatever is already
-known about the deal (vertical, systems mentioned so far, if any). A
-structured intake going _in_ produces cleaner material coming out in Step 1
-next time — this is the one place this skill acts before the call rather
-than cleaning up after it. Do not proceed through Steps 1–9 in this mode.
+If this was a merge (Step 2), show what changed from the prior digest, not
+just the final state. Tight, scannable sections — this is read quickly by a
+human and parsed by the next skill in the pipeline, not read as a
+narrative. Length scales with the input, not a fixed template length.
+
+### Step 10 — Build the Call Prep Checklist (before the call only)
+
+Entry point from Step 0 when no call has happened yet. Title the output
+**Call Prep Checklist — [account name]** and give a short, targeted list of
+what to prepare or ask, based on whatever is already known about the deal
+(industry, systems mentioned so far, if any). A structured intake going
+_in_ produces cleaner material coming out in Step 1 next time — this is the
+one place this skill acts before the call rather than cleaning up after it.
+Do not proceed through Steps 1–9 on this path. End with: _"After the call,
+paste your notes or transcript here and I'll turn them into a Discovery
+Summary."_
 
 ---
 
@@ -234,7 +289,7 @@ built.
   not this skill
 - The readiness signal (Step 8) is a judgment call based on the
   Stated/Inferred/Missing mix, not a scored or quantified threshold
-- Not yet tested: pre-call checklist mode (Step 10) end-to-end, a
+- Not yet tested: the Call Prep Checklist (Step 10) end-to-end, a
   three-or-more-call merge chain, discovery material in a language other
   than English
 
@@ -242,6 +297,13 @@ built.
 
 ## Output Rules
 
+- Always call the output a **Discovery Summary** (after the call) or a
+  **Call Prep Checklist** (before the call) to the partner, and use the
+  plain labels ("Ready to scope?", "Customer's terms", "Industry signals") —
+  never "digest", "pre-call", "mode", or the other internal terms
+- Always include the tag legend under the title, and always end with the
+  next-step line pointing to the SOW (or to the Open Questions, if a
+  follow-up call is needed)
 - Always lead with the Step 8 readiness signal before the detailed fields
 - Always tag every fact **[Stated]**, **[Inferred]**, or **[Missing]** —
   never blend without marking which

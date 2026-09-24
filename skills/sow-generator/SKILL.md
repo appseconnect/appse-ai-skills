@@ -74,7 +74,7 @@ separate process entirely (see Step 8).
 
 | Field                | Required | Source                                                     | Description                                                                                                                                        | Default                                           |
 | -------------------- | -------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| `requirement_digest` | ✅       | User provides                                              | The completed digest from `requirement-digest` — readiness signal, five confidence-tagged fields, vocabulary map, vertical signals, open questions | —                                                 |
+| `requirement_digest` | ✅       | User provides                                              | The completed digest from `requirement-digest` (shown to partners as the "Discovery Summary"; if missing, offer to create one — see Step 0) — readiness signal, five confidence-tagged fields, vocabulary map, vertical signals, open questions | —                                                 |
 | `sow_format`         | ⬜       | User provides, if asked in Step 0                          | The partner's own SOW template or house format                                                                                                     | none — falls back to the generic format in Step 1 |
 | `org_id`             | ⬜       | User confirms, only if capability cross-checking is wanted | Which appse ai org's catalog to cite real capabilities from in Step 3                                                                              | skip cross-check if not given                     |
 
@@ -84,9 +84,19 @@ separate process entirely (see Step 8).
 
 Follow these steps in order. Do not skip or reorder.
 
-### Step 0 — Ask for the Partner's SOW Format
+### Step 0 — Confirm a Discovery Summary Exists, Then Ask for the SOW Format
 
-**Before drafting anything**, ask whether the partner has their own SOW
+**First, check that a Requirement Digest was actually provided.** Partners
+know it as the **Discovery Summary** (the output of `requirement-digest`) —
+use that name, not "Requirement Digest", when talking to them. If none was
+given (e.g. the partner asks "write a SOW for Shopify to SAP" with only a
+one-line description, or pastes raw call notes), do not invent one and do
+not draft from the raw material directly. Say that a SOW is built from a
+Discovery Summary, and offer to create one first from their call notes or
+transcript (via `requirement-digest`). Only continue with this skill once a
+summary exists.
+
+Then, **before drafting anything**, ask whether the partner has their own SOW
 template or house format they want this followed against (a document to
 paste in, a described structure, a named section order). This is not
 optional to skip past — always ask once per SOW, even if a format was used
@@ -223,6 +233,11 @@ partner's org.
 
 ## Output Rules
 
+- Never draft a SOW without a Discovery Summary (Requirement Digest) — if
+  none is given, offer to create one first; never fabricate one from a
+  one-line request
+- Refer to the input as the "Discovery Summary" when talking to the
+  partner, not "Requirement Digest"
 - Always ask for the partner's own SOW format before drafting anything —
   every time, not just once per partner
 - Fall back to the generic format only when no partner format is given
