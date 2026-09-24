@@ -136,7 +136,11 @@ the field mappings. A search node feeding a Decision usually sets
 
 **`current_name` matters:** later nodes reference earlier ones as
 `$('<current_name>')`, so give each node a clear, unique name and use that
-exact string in expressions.
+exact string in expressions. **Never copy a node name from a reference
+file** — `$('Splitter')`, `$('Shopify')`, `$('SAP Business One 2')` are
+those workflows' names. Use the names *you* gave the nodes in this
+workflow (Workflow 15 broke by referencing `'Splitter'` when its Splitter
+was named "Split Variants").
 
 **Which node to reference (what the real files show):**
 - The node right after the trigger — or right after a Filter — reads the

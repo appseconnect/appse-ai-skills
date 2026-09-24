@@ -225,9 +225,21 @@ jump back past a Filter or Decision to the trigger:
   on this path — when a Filter is in the path, that's the Filter by name,
   not the trigger. See `references/conventions.md` for exactly what's
   confirmed.
+- **Every `$('<name>')` must be the exact `current_name` of a node in *this*
+  workflow.** Node names in reference files (`'Splitter'`, `'Shopify'`,
+  `'SAP Business One 2'`) belong to those workflows — never copy them. If
+  you name the Splitter "Split Variants", every reference to it is
+  `$('Split Variants')`. A reference to a name that doesn't exist resolves
+  to nothing, and the field goes out blank.
 - In Step 10, open each node's mapping and ask: "does this expression read
   the record that actually reached this node?" If the answer is "it reads
   the trigger from three steps back", fix it.
+
+(Real failure, 2026-09-24, Workflow 15: the Splitter was named "Split
+Variants", but the Filter and the Create Item node referenced
+`$('Splitter')`, copied from the SKU reference — so ItemCode, ItemName, and
+Price pointed at a node that doesn't exist. They also skipped past the
+"Has SKU" Filter, which is the node carrying each variant at that point.)
 
 (Real failure, 2026-09-24: a search mapped the email from the trigger
 instead of from the "skip if no email" Filter right before it. The value
@@ -689,7 +701,10 @@ that every `AppTriggerNode`/`AppNode` has a `credential_id` matching Step 2,
 that **no property anywhere in any node is `""` or missing a value —
 check recursively, including every field inside arrays and objects** (a
 blank `Currency` inside `ItemPrices` counts; fill it via the Step 6 ladder
-or ask, never save it blank), **that every
+or ask, never save it blank), **that every `$('<name>')` in any
+expression matches the `current_name` of a node that exists in this
+workflow and sits earlier on the same path** (list the node names, then
+check each reference against the list), **that every
 mapping reads from the node that actually passes the record to it (not the
 trigger, when a Filter or Decision sits in between), and that the
 safeguards from your expert review (listed in Step 9) actually made it into
