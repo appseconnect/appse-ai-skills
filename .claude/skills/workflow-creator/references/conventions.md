@@ -104,6 +104,44 @@ business condition" as a distinct action type, and for multiple independent
 branches fanning out from one trigger node.
 **Status: approved reference for parallel branching + notification actions.**
 
+## Node and edge envelope (common to every file above)
+Use this when composing a custom flow (SKILL.md Building Blocks) — every
+reference file follows it.
+
+**Flow:** `{ "nodes": [...], "edges": [...], "viewport": {x, y, zoom} }`
+
+**Every node:** `id` (unique string, e.g. a UUID), `type`, `data`,
+`position: {x, y}`, `measured: {width, height}` — app nodes 240×120,
+Decision/Filter nodes 136×120. Lay nodes out left→right (x += ~370 per
+step; parallel/branch nodes offset on y, e.g. ±65) so the canvas is readable.
+
+**`data` on `AppTriggerNode`:** `app` (the app's catalog details: `code`,
+`display_name`, `icon`, `doc_url`, `category`, `has_actions`,
+`has_triggers`, `has_tools`, `description`), `idx` (1), `cron`
+(e.g. `"*/3 * * * *"`), `settings` (`on_error`, `execute_once`,
+`retry_on_fail`, `always_output_data`), `properties` (`limit`,
+`since_from`), `action_code`, `action_name`, `current_name`,
+`original_name`, `next_data_from_template`
+(`={{date_max_by($payload[*],&<timestamp field>) }}`), `credential_id`.
+
+**`data` on `AppNode`:** same as the trigger minus `cron` and
+`next_data_from_template`; `idx` increments per node; `properties` holds
+the field mappings. A search node feeding a Decision usually sets
+`settings.always_output_data: true`, so the "not found" branch still runs.
+
+**`data` on `DecisionNode` / `FilterNode`:** `idx`, `settings`
+(`disable_case_sensitivity: false`), `properties.advance_filter`,
+`current_name`, `original_name` (`"Decision"` / `"Filter"`). No `app`, no
+`credential_id`.
+
+**`current_name` matters:** later nodes reference earlier ones as
+`$('<current_name>')`, so give each node a clear, unique name and use that
+exact string in expressions.
+
+**Every edge:** `id`, `source`, `target`, `sourceHandle`, `targetHandle`
+(`"default"`). `sourceHandle` is `"default"`, except out of a
+`DecisionNode`, where it's `"true"` or `"false"`.
+
 ## Node types now confirmed (previously only AppTriggerNode/AppNode seen)
 - `DecisionNode` — `true`/`false` output handles, `advance_filter` condition
   array: `[[{operator: {type, operation}, leftValue, rightValue}, ...]]`.

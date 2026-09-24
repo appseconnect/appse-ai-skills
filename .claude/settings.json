@@ -11,6 +11,7 @@
       "mcp__claude_ai_arise-mcp__get_operation_detail",
       "mcp__claude_ai_arise-mcp__list_workflows",
       "mcp__claude_ai_arise-mcp__get_workflow",
+      "mcp__claude_ai_arise-mcp__save_workflow",
       "mcp__context7__resolve-library-id",
       "mcp__context7__query-docs"
     ]

@@ -7,8 +7,10 @@ description: >
   (or a set of workflows, e.g. "the full sales cycle") between named apps for
   a named entity. Presents a plan of the workflow(s) needed — including which
   structural pattern each one requires (simple sync, dedupe-and-skip,
-  create-or-update, SKU/item reconciliation, or parallel branching) — and
-  lets the user decide the final count and combination before building.
+  create-or-update, SKU/item reconciliation, parallel branching, or a custom
+  flow composed from the scenario's business rules when no known pattern
+  fits) — and lets the user decide the final count and combination before
+  building.
   Always confirms org, app connections, and field mappings before writing
   anything. Source app, target app, and entity type are supplied by the user
   each run — none are hardcoded.
@@ -131,13 +133,69 @@ same confidence as a docs-confirmed one.
 
 ---
 
-## Reference Patterns (structure only — never literal field values)
+## Building Blocks (compose any workflow from these)
+
+**Most scenarios won't have a matching reference workflow — that's normal,
+and never a reason to stop.** The skill builds workflows from the partner's
+scenario and business rules by combining a small set of confirmed building
+blocks. The Reference Patterns below are worked examples of these blocks
+combined; they are not a whitelist of allowed shapes.
+
+### Confirmed node types
+| Node `type` | Purpose | Outputs |
+|---|---|---|
+| `AppTriggerNode` | Starts the workflow on an app event (polling) — exactly one per workflow | `default` |
+| `AppNode` | Runs one app operation: search/get, create, update, etc. | `default` |
+| `DecisionNode` | If/else on an `advance_filter` condition | `true`, `false` |
+| `FilterNode` | Lets only matching records continue; others stop silently | `default` |
+| `JsonConverterNode` | Parses a JSON string field into structured data | `default` |
+| `SplitterNode` | Fans out an array for per-item processing — **config not confirmed**, see Known Limits | `default` |
+
+Node-level fields, edge fields, and the `advance_filter` condition shape are
+documented in `references/conventions.md` — copy those shapes exactly.
+
+### Turning business rules into blocks
+Read the partner's scenario sentence by sentence and map each rule:
+
+| Rule in the scenario | Blocks to use |
+|---|---|
+| "When X happens in App A" | `AppTriggerNode` on App A's matching trigger |
+| "Create / update Y in App B" | `AppNode` with App B's create/update operation |
+| "Don't create duplicates" | Search `AppNode` → `FilterNode` (skip if found) |
+| "Update it if it exists, otherwise create it" | Search `AppNode` → `DecisionNode` → `true`: update, `false`: create |
+| "Only when / only if {condition}" | `FilterNode` with that condition |
+| "If {condition} do P, otherwise do Q" | `DecisionNode`, both branches wired |
+| "Y needs Z to exist first" (e.g. order needs customer) | Search Z → `DecisionNode` → `true`: create Y with found key; `false`: create Z → then create Y |
+| "Try match on A, then B, then C" | Chain of search `AppNode` → `DecisionNode` pairs, each `false` branch trying the next criterion |
+| "Also notify / also do something else" | A second branch straight off the trigger (parallel) |
+| "For each line / item" | `SplitterNode` — config unconfirmed; flag it (see Known Limits) |
+
+Rules the scenario doesn't state don't get a block — don't add lookups,
+branches, or notifications nobody asked for.
+
+### When the composed shape has no matching reference
+Build it from the blocks above, then:
+- In Step 9, say plainly that this shape was assembled for their scenario
+  (e.g. "this is a custom flow built from your rules") and describe it in
+  business terms, step by step, so the partner can check the logic.
+- In Step 11, suggest they give it a quick test run in the portal before
+  switching it on.
+
+The only genuine blockers are unknowns in a block itself (a `SplitterNode`'s
+config, or a node type not listed above) — for those, ask. An unfamiliar
+*combination* of known blocks is not a blocker.
+
+---
+
+## Reference Patterns (worked examples — structure only, never literal field values)
 
 `save_workflow` requires the full flow as JSON (nodes, edges, and how each
 node is tied to an app/operation). This structure is not documented in
 appse-ai-docs, so it's learned from real, known-working examples. **Every
 pattern below is real exported data — read for structure only, never reuse
 literal field values, credential IDs, or app-specific mappings from them.**
+Use the closest one as a starting point when it fits; when none fits, compose
+from Building Blocks above.
 
 ### Simple sync (one trigger, one action, no branching)
 Live reference, fetched via `get_workflow` (see Allowed Tools):
@@ -162,9 +220,10 @@ Read the local file directly — no MCP call needed for these:
 See `references/conventions.md` for full detail on each file, including
 confirmed node-type syntax (`DecisionNode` true/false handles, `FilterNode`
 single-output semantics, `SplitterNode`, `JsonConverterNode`) and what is
-still **not** confirmed by any reference (a multi-criterion entity-resolution
-fallback cascade, e.g. email → phone → name, has no known-working example
-yet — do not attempt to build one without stopping to ask first).
+still **not** confirmed by any reference (e.g. a multi-criterion
+entity-resolution cascade, email → phone → name, has no known-working
+example yet — build it from Building Blocks if the scenario asks for it, and
+flag it as a custom flow in Step 9).
 
 **On the AI-node pattern specifically:** one reference file contains a real,
 working example of an AI node (`get_chat_completions`) used mid-workflow for
@@ -194,7 +253,7 @@ file verbatim.
 | `target_app` | ✅ | `list_apps`, user confirms if ambiguous | App the action writes to, per workflow | — |
 | `trigger_operation` | ✅ | `list_operations`, user confirms if ambiguous | The "new/updated {entity_type}" trigger, per workflow | — |
 | `action_operation` | ✅ | `list_operations`, user confirms if ambiguous | The "create/update {entity_type}" action, per workflow | — |
-| `structural_pattern` | ✅ | Assessed by the skill in Step 0, confirmed with user | Which Reference Pattern shape this workflow needs (simple / dedupe-skip / dedupe-create-or-update / find-or-create-parent-then-child / SKU-reconciliation / parallel-branch) | — |
+| `structural_pattern` | ✅ | Assessed by the skill in Step 0, confirmed with user | The shape this workflow needs — a known Reference Pattern (simple / dedupe-skip / dedupe-create-or-update / find-or-create-parent-then-child / SKU-reconciliation / parallel-branch) or **custom**, composed from Building Blocks for the scenario's rules | — |
 | `field_mappings` | ⬜ | `query-docs` (first pass) + `get_operation_detail` (governs); else ask user | Source field → target field mapping, per workflow | No default — do not assume standard fields across arbitrary apps/entities |
 | `since_from` | ⬜ | User input, if trigger is polling-based | Trigger start date/time | now |
 | `limit` | ⬜ | User input, if trigger is polling-based | Records per request | 10 |
@@ -219,9 +278,9 @@ only validated per-pattern, operational clarity) and propose the correct
 decomposition instead.
 
 **b) Assess structural pattern and performance shape, per workflow**: for
-each workflow in the decomposition, identify which Reference Pattern it
-needs (simple / dedupe-skip / dedupe-create-or-update / SKU-reconciliation /
-parallel-branch), and whether the downstream processing for a single trigger
+each workflow in the decomposition, map the scenario's rules to Building
+Blocks and name the resulting shape — a known Reference Pattern if one
+matches, otherwise **custom** (described in plain steps) — and whether the downstream processing for a single trigger
 event would be heavy enough (multiple lookups, a reconciliation cascade,
 several dependent branches) that splitting it further — even within one
 business event — would keep each workflow simpler and faster to run. This is
@@ -415,12 +474,17 @@ Reference Pattern:
   from `references/` — no MCP call needed.
 
 Apply the structure only — never literal field values, credential IDs, or
-app-specific mappings from the reference. If the workflow being built
-combines elements of more than one pattern, or needs a shape not covered by
-any reference (e.g. an approval gate, or the entity-resolution fallback
-cascade — see Reference Patterns), flag this explicitly in Step 9 rather
-than silently assuming a reference covers it or improvising an unconfirmed
-shape.
+app-specific mappings from the reference.
+
+- **Custom shape (no reference matches), or a mix of patterns** → compose it
+  from Building Blocks: pick the node types for each rule, copy node and
+  edge shapes from `references/conventions.md`, and wire the edges
+  (`true`/`false` handles on Decision nodes, `default` everywhere else).
+  Still read the closest reference file for the envelope details. Say in
+  Step 9 that it's a custom flow — don't stop to ask just because no
+  reference matches.
+- Only stop and ask if a block's own configuration is unknown (e.g. a
+  `SplitterNode`) or a needed node type isn't in Building Blocks.
 
 ### Step 9 — Present Summary and Wait for Confirmation
 Before creating this workflow, present (following the Asking Questions and
@@ -436,8 +500,10 @@ Tone guidance above):
 > - **{target field}** ← `{expression}` — {one-line reason, e.g. "Customer
 >   number is required, so I'm using the Shopify customer's numeric ID"}
 >
-> {If shape is more complex than any single reference, or combines
-> patterns, say so here.} If you'd like any of these mapped differently,
+> {If this is a custom flow built from their rules rather than a known
+> pattern, say so and walk through it in plain steps, e.g. "1. New Shopify
+> order → 2. look up the customer by email → 3. if found, create the order
+> for them; if not, create the customer first, then the order."} If you'd like any of these mapped differently,
 > tell me what to use and I'll update it. Otherwise, shall I go ahead?
 
 Wait for explicit confirmation. Do not proceed on an ambiguous or implied yes.
@@ -445,7 +511,9 @@ Wait for explicit confirmation. Do not proceed on an ambiguous or implied yes.
 ### Step 10 — Build and Save
 Call `create_workflow`, then `save_workflow` using the envelope structure
 learned in Step 8, the field mappings from Steps 6–7, and this workflow's own
-trigger and action.
+trigger and action. The Step 9 "yes" covers both calls — once the workflow is
+created, save it straight away without asking again, then tell the partner
+it's saved (Step 11).
 
 **Attach a credential to every app node, including the trigger.** Set
 `data.credential_id` on each `AppTriggerNode` and `AppNode` to the
@@ -467,7 +535,8 @@ ones as a short list with their reasons, and close with: _"If any of these
 should come from somewhere else, tell me what to use and I'll update the
 workflow."_ If the partner then asks for a change, update this same workflow
 (read it with `get_workflow`, change only the named fields, `save_workflow`)
-rather than creating a new one. This is what the user checks against the appse ai
+rather than creating a new one. The partner's change request is the go-ahead
+— save without asking again, then confirm what changed. This is what the user checks against the appse ai
 UI once it's reachable — the build itself is safely persisted regardless of
 UI availability, so a UI outage delays verification, not the build's
 validity (state this plainly, without naming the database or any internal
@@ -601,9 +670,11 @@ conversation.)*
   config shape for it without further confirmation; if a build needs one,
   treat this as an open question to raise rather than a solved pattern.
 - **No fallback-cascade entity-resolution example exists** (e.g. email, then
-  phone, then name as successive match attempts). If a build seems to need
-  this, stop and ask rather than improvising a multi-Decision-node chain
-  with no reference.
+  phone, then name as successive match attempts). Since 2026-09-24 the skill
+  composes this from Building Blocks (chained search → Decision pairs) when
+  a scenario asks for it, flagged as a custom flow in Step 9 — not yet
+  tested live. Same applies to any other custom composition: the building
+  blocks are confirmed, but each new combination is unproven until it runs.
 - **The AI-node (`get_chat_completions`) reconciliation pattern is real but
   explicitly not approved for the skill to build from on its own** — see
   Reference Patterns. Needs a deliberate decision, not silent adoption.
@@ -621,9 +692,12 @@ conversation.)*
   runs to measure.
 - No arise-mcp tool currently exposes remaining workflow allocation/quota.
 - **Tool-approval prompt volume**: a project-level `settings.json` now
-  pre-approves all read-only arise-mcp and Context7 tools; `create_workflow`
-  and `save_workflow` still prompt individually as a deliberate second
-  safety layer beyond Step 9. Confirmed this cuts the Claude-Code-level
+  pre-approves all read-only arise-mcp and Context7 tools, plus
+  `save_workflow` (added 2026-09-24 at the team's request — saving follows
+  straight on from a create the partner already approved in Step 9, so the
+  extra prompt added no real safety). `create_workflow` still prompts
+  individually, as the second safety layer beyond Step 9, since each create
+  uses a workflow from the partner's allocation. Confirmed this cuts the Claude-Code-level
   approval prompts from ~7 to ~2 per run. Local file reads under
   `references/` are not yet added to this allowlist — first live run with
   the new reference files will show whether they prompt too.
@@ -679,8 +753,11 @@ conversation.)*
   number them when batched, and don't ask again what's already been
   resolved unambiguously. See Asking Questions.
 - Present a full summary and wait for explicit confirmation before writing
-  anything, and flag explicitly if the requested shape is more complex than,
-  or combines, the available reference patterns.
+  anything. If the shape is custom (no matching reference), say so and walk
+  through it in plain steps.
+- Never refuse or stall because no reference workflow matches the scenario —
+  compose it from Building Blocks. Ask only when a block's own
+  configuration or a needed node type is genuinely unknown.
 - Never build the AI-node reconciliation pattern without explicit user
   request and confirmation — it is real, working, and documented, but not
   an approved default.
