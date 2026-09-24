@@ -840,8 +840,10 @@ conversation.)*
   split isn't in the saved config. Since 2026-09-24 the skill decides for
   itself whether a Splitter is needed (see "Decide the unit of processing")
   and, when it is, builds it like the reference and asks the partner to
-  confirm the split list in the portal. Confirm the real config mechanism
-  with the platform team.
+  confirm the split list in the portal. **Update, same day:** Workflow 13
+  showed the real config — `data.fields_to_split` (e.g. `"variants.nodes"`)
+  and `data.include` (`"no_other_fields"`), see `references/conventions.md`.
+  Set both explicitly when building a Splitter.
 - **Top-level records are iterated per record without a Splitter** —
   confirmed from live run metrics (Workflow 11: 10 search calls for 10
   customers; Workflow 12: 40) and from every reference workflow.

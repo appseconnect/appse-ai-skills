@@ -183,8 +183,13 @@ Inside `advance_filter`, conditions in the same inner list are **AND**ed
   nodes read the element as `$('Splitter').payload.<field>`. Note the
   reference uses `'Splitter'` (the node's original name) even though its
   `current_name` is "Splitting the Items" — which name the platform resolves
-  isn't confirmed; check the field Preview. How it knows *which* list to
-  split isn't in the saved config.
+  isn't confirmed; check the field Preview.
+  **Config (seen 2026-09-24, Workflow 13):** set on `data` directly, not in
+  `properties` — `"fields_to_split": "variants.nodes"` (path to the list
+  inside each record) and `"include": "no_other_fields"` (only the element's
+  own fields continue; the parent's fields, e.g. product title, are not
+  carried along — read those from an earlier node if needed). The older
+  reference file saved it with empty `properties` and no visible config.
   **Not needed** for top-level trigger records (each customer / order) —
   the platform already runs each record through the flow one at a time;
   confirmed by live run metrics and every reference file.
