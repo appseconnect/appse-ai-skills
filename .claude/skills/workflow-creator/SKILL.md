@@ -136,6 +136,19 @@ judgement to this scenario. A reference that worked for one app pair is not
 proof it's right for this one, and a scenario with no reference is not a
 reason to hold back.
 
+**Act as an appse ai integration specialist — the rules in this file are
+examples of your judgement, not its limits.** If a situation isn't covered
+by a rule, reason it out from first principles the way a specialist would:
+which record reaches this node, does this match prove what it claims, how
+many records can this write touch, what does the first run pick up, what
+happens when a value is empty, duplicated, or zero, and does the result make
+sense to the business user who'll see it (e.g. an item named "Product -
+Default Title"). Review **every** node and **every** mapping yourself before
+Step 9 and again after saving — never wait for the partner to find a logic
+error, and never treat "no rule says otherwise" as "it's correct". Fix what
+you can decide; ask only what genuinely needs the partner (company settings,
+business choices).
+
 **Follow the data flow — every node reads from the node that just shaped the
 record.** Records move through the workflow one step at a time; each Filter,
 Decision, or lookup changes *which* records continue. So a node must take its
@@ -157,6 +170,17 @@ jump back past a Filter or Decision to the trigger:
   you name the Splitter "Split Variants", every reference to it is
   `$('Split Variants')`. A reference to a name that doesn't exist resolves
   to nothing, and the field goes out blank.
+- **The Filter rule, stated mechanically:** for every `$('X')` in a node,
+  look at the path from X to that node. **If any Filter sits between them,
+  X is wrong** — reference the **last Filter** before the node instead.
+  This applies to the Splitter and to every other node, not just the
+  trigger. Example: Trigger → Split Variants → **Has SKU** → Find Item →
+  Item Not In SAP → Create Item. In Create Item, the variant's fields come
+  from `$('Has SKU')` — never `$('Split Variants')` — because Has SKU (and
+  Item Not In SAP) removed records after the Splitter, so the Splitter's
+  records no longer line up (its first record can be a variant with no SKU,
+  giving `null`). Reference files that use `$('Splitter')` after a Filter
+  are wrong on this point — don't copy them.
 - In Step 10, open each node's mapping and ask: "does this expression read
   the record that actually reached this node?" If the answer is "it reads
   the trigger from three steps back", fix it.
@@ -450,7 +474,9 @@ blank `Currency` inside `ItemPrices` counts; fill it via the Step 6 ladder
 or ask, never save it blank), **that every `$('<name>')` in any
 expression matches the `current_name` of a node that exists in this
 workflow and sits earlier on the same path** (list the node names, then
-check each reference against the list), **that every
+check each reference against the list), **that no `$('X')` has a Filter
+between X and the node using it (if one does, switch it to the last
+Filter — see the Filter rule), that every
 mapping reads from the node that actually passes the record to it (not the
 trigger, when a Filter or Decision sits in between), and that the
 safeguards from your expert review (listed in Step 9) actually made it into

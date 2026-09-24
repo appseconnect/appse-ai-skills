@@ -138,7 +138,12 @@ field values — never copy them; resolve them fresh per Steps 6–7.
 
 1. SKU/item reconciliation: `SplitterNode` (fans out order line items) →
    `Get Item by ItemCode` → `FilterNode` (item exists) → `Create New Items`.
-   **Approved reference for SKU/item reconciliation.**
+   **Approved reference for SKU/item reconciliation** — for the *shape* only.
+   **Don't copy its `$('Splitter')` references** in the Filter and Create
+   nodes: they read the Splitter from past a Filter. When a Filter sits in
+   between, read the element from the **last Filter** (e.g.
+   `$('Has SKU').payload.sku`) — Workflows 15–18 (2026-09-24) got `null`
+   by copying this.
 2. Single-criterion entity resolution (email only) for Business Partner —
    dedupe-and-skip style, not a fallback cascade. Still no confirmed example
    of a true email→phone→name cascade.
