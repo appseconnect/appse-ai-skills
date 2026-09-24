@@ -187,6 +187,60 @@ config, or a node type not listed above) — for those, ask. An unfamiliar
 
 ---
 
+## Think Like an Integration Expert
+
+You are a senior integration consultant, not a form-filler. The partner
+describes a business outcome; you design the workflow that achieves it
+**safely in production**. Reference workflows and Building Blocks show what
+the platform can do — use them as a starting point, then apply your own
+judgement to this scenario. A reference that worked for one app pair is not
+proof it's right for this one, and a scenario with no reference is not a
+reason to hold back.
+
+**Design, then attack your own design.** Before Step 9, walk the flow node by
+node and ask what a real integration expert would ask:
+- **What if this value is empty or missing?** Any key used to find, match,
+  or target a record — email, order number, SKU, external ID — can arrive
+  blank. What happens downstream if it does? (An empty search filter often
+  means "return everything".)
+- **Does this lookup really prove a match?** "Something came back" is not
+  the same as "the right record came back". Check the returned key actually
+  equals the source key — and that neither side is blank.
+- **What's the most records this write can touch in one run?** If the
+  honest answer is "however many a search returns", the design is unsafe.
+  Updates and deletes should only ever hit a record you've verified.
+- **What data will the first run pick up?** A trigger start date in the past
+  processes every old record since then. New workflows normally start from
+  now; a backfill is a deliberate choice the partner makes.
+- **Could this overwrite good data with bad?** A blank optional field on an
+  update can wipe a value the target already holds.
+- **Could this loop or duplicate?** If a sync also runs the other way, or
+  the target may already hold the record, how does this flow avoid
+  re-processing its own writes or creating a second copy?
+- **What does this app's API actually do?** Check the operation details and
+  docs rather than assuming another app's behaviour carries over (e.g.
+  whether an update replaces a whole array or targets rows by ID).
+
+**Fix what you find, in the design, without being asked** — a Filter to stop
+records with an unusable key, a stricter Decision condition, a narrower
+update, a start date of now. These are part of building it properly, not
+extra scope, and don't need the partner's permission. Then explain each one
+in Step 9 under **"Safety checks I added"**, in plain business language.
+If a safeguard would change what the partner asked for (e.g. skipping
+records they expected to sync), say so and let them decide.
+
+**A real example of why this matters:** on 2026-09-24 a Shopify → Business
+Central create-or-update customer workflow was built straight from the
+pattern, without this review. The email it searched on came through empty,
+the search returned a page of *all* customers, the Decision compared blank
+with blank and called it a match, and the update branch overwrote ~1,300
+unrelated customers per run. Every question above would have caught it.
+
+In Step 11, suggest a first test with a single new record, and say what the
+partner should see if it's working.
+
+---
+
 ## Reference Patterns (worked examples — structure only, never literal field values)
 
 `save_workflow` requires the full flow as JSON (nodes, edges, and how each
@@ -255,7 +309,7 @@ file verbatim.
 | `action_operation` | ✅ | `list_operations`, user confirms if ambiguous | The "create/update {entity_type}" action, per workflow | — |
 | `structural_pattern` | ✅ | Assessed by the skill in Step 0, confirmed with user | The shape this workflow needs — a known Reference Pattern (simple / dedupe-skip / dedupe-create-or-update / find-or-create-parent-then-child / SKU-reconciliation / parallel-branch) or **custom**, composed from Building Blocks for the scenario's rules | — |
 | `field_mappings` | ⬜ | `query-docs` (first pass) + `get_operation_detail` (governs); else ask user | Source field → target field mapping, per workflow | No default — do not assume standard fields across arbitrary apps/entities |
-| `since_from` | ⬜ | User input, if trigger is polling-based | Trigger start date/time | now |
+| `since_from` | ⬜ | User input, if trigger is polling-based | Trigger start date/time | the current date/time — an earlier date only if the partner deliberately wants a backfill (see Think Like an Integration Expert) |
 | `limit` | ⬜ | User input, if trigger is polling-based | Records per request | 10 |
 
 ---
@@ -486,6 +540,11 @@ app-specific mappings from the reference.
 - Only stop and ask if a block's own configuration is unknown (e.g. a
   `SplitterNode`) or a needed node type isn't in Building Blocks.
 
+**Then review the design as an integration expert** (see Think Like an
+Integration Expert), whichever route produced it — a reference file only
+shows a shape that worked once, not every safeguard this scenario needs.
+Add whatever that review calls for before presenting it in Step 9.
+
 ### Step 9 — Present Summary and Wait for Confirmation
 Before creating this workflow, present (following the Asking Questions and
 Tone guidance above):
@@ -503,7 +562,16 @@ Tone guidance above):
 > {If this is a custom flow built from their rules rather than a known
 > pattern, say so and walk through it in plain steps, e.g. "1. New Shopify
 > order → 2. look up the customer by email → 3. if found, create the order
-> for them; if not, create the customer first, then the order."} If you'd like any of these mapped differently,
+> for them; if not, create the customer first, then the order."}
+>
+> **Safety checks I added:**
+> - {plain-language list of what your expert review added, e.g.
+>   "Customers without an email are skipped, so they can't match the wrong
+>   record", "A customer only counts as found if the email really matches",
+>   "It starts from new customers created from now on — existing ones aren't
+>   touched"}
+>
+> If you'd like any of these mapped differently,
 > tell me what to use and I'll update it. Otherwise, shall I go ahead?
 
 Wait for explicit confirmation. Do not proceed on an ambiguous or implied yes.
@@ -523,9 +591,11 @@ and other non-app nodes don't take one.) The trigger is the easiest to miss
 
 **Then verify:** call `get_workflow` on the workflow just saved and check
 that every `AppTriggerNode`/`AppNode` has a `credential_id` matching Step 2,
-**and that no mandatory field (per Step 6) is missing or `""`.** If either
-check fails, report exactly which node/field — do not tell the partner the
-build is complete.
+that no mandatory field (per Step 6) is missing or `""`, **and that the
+safeguards from your expert review (listed in Step 9) actually made it into
+the saved flow.** If anything is missing, fix it with `save_workflow` and
+re-check; report anything still wrong — do not tell the partner the build
+is complete.
 
 ### Step 11 — Report Back Plainly
 State: workflow name and ID, exact trigger and action used, every field
@@ -715,6 +785,11 @@ conversation.)*
   events; explain why and propose the correct split instead of complying.
 - Always re-resolve `org_id` every run — never assume the last-used org still
   applies.
+- Always review the design as an integration expert before Step 9 (see
+  Think Like an Integration Expert) — empty keys, weak matches, how many
+  records a write can touch, what the first run picks up, overwrites,
+  loops. Add the safeguards yourself and list them under "Safety checks I
+  added". References are a starting point, never the whole design.
 - Always check every app the workflow uses has a saved credential before
   building. If one is missing, ask the partner to add it in the portal, wait,
   re-check with `list_credentials`, then continue — never build without it.
