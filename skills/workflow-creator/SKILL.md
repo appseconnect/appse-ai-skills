@@ -41,6 +41,20 @@ many get created is a real cost decision, not just a technical one. See Step 0.
 1–6 are grouped into three batches), read reference files only when a step
 needs them, and ask every open question in one round inside Step 9.
 
+## Working speed
+- **Don't create a task/todo list** for a build — just work through the steps.
+- **Read each file at most once per session.** Read `conventions.md` once, at
+  Step 8. Open a `pattern-*.json` or `guide-*.md` only when a specific detail
+  you need isn't in this file or `conventions.md` — never "to be safe".
+- **Don't re-call a tool** whose result you already have in this session
+  (org, apps, credentials, operations, field details) unless something has
+  changed (e.g. the partner just added a connection).
+- **Decide routine choices quickly.** When there's an obvious sensible
+  default (a standard constant, the single matching operation, the usual
+  node shape), take it and list it under "Mappings I worked out" or the
+  Step 9 questions — don't deliberate over it. Spend thinking time on the
+  expert review, not on the obvious.
+
 ## Where the detail lives (read only when needed)
 | File in `references/` | Read it when |
 |---|---|

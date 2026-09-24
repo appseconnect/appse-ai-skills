@@ -59,6 +59,7 @@ updated) → Magento2 `Get product by SKU` (`sku: {{$payload.number}}`,
 `product`).
 
 **What it confirms:**
+
 - The lookup straight after the trigger reads `$payload` (same as every
   other reference).
 - Create/update nodes after a lookup + Decision read source fields from the
@@ -70,6 +71,7 @@ updated) → Magento2 `Get product by SKU` (`sku: {{$payload.number}}`,
   outside it.
 
 **Values not to copy blindly:**
+
 - `type_id: "simple"`, `status: "1"` (enabled), `visibility: "4"` (catalog
   and search) are standard Magento codes — reasonable defaults, but still
   list them under "Mappings I worked out" in Step 9.
@@ -78,6 +80,7 @@ updated) → Magento2 `Get product by SKU` (`sku: {{$payload.number}}`,
 
 **Gaps an expert build should close (not edited here — this is the export
 as supplied):**
+
 - No guard for an empty item number before the lookup, and the Decision
   only checks `equal` — add the not-empty checks per "Think Like an
   Integration Expert".
