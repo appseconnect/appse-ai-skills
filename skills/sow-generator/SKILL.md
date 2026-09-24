@@ -76,7 +76,7 @@ separate process entirely (see Step 8).
 
 | Field                | Required | Source                                                     | Description                                                                                                                                        | Default                                           |
 | -------------------- | -------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| `requirement_digest` | ✅       | User provides                                              | The completed digest from `requirement-digest` (shown to partners as the "Discovery Summary"; if missing, offer to create one — see Step 0) — readiness signal, five confidence-tagged fields, vocabulary map, vertical signals, open questions | —                                                 |
+| `requirement_digest` | ⬜ (recommended) | User provides — or a raw brief / call notes instead                                              | The completed digest from `requirement-digest` (shown to partners as the "Discovery Summary") — recommended; raw briefs or notes are also accepted, see Step 0 — readiness signal, five confidence-tagged fields, vocabulary map, vertical signals, open questions | —                                                 |
 | `sow_format`         | ⬜       | User provides, if asked in Step 0                          | The partner's own SOW template or house format                                                                                                     | none — falls back to the generic format in Step 1 |
 | `org_id`             | ⬜       | User confirms, only if capability cross-checking is wanted | Which appse ai org's catalog to cite real capabilities from in Step 3                                                                              | skip cross-check if not given                     |
 
@@ -86,17 +86,32 @@ separate process entirely (see Step 8).
 
 Follow these steps in order. Do not skip or reorder.
 
-### Step 0 — Confirm a Discovery Summary Exists, Then Ask for the SOW Format
+### Step 0 — Check What the Partner Wants, Then Ask for the SOW Format
 
-**First, check that a Requirement Digest was actually provided.** Partners
-know it as the **Discovery Summary** (the output of `requirement-digest`) —
-use that name, not "Requirement Digest", when talking to them. If none was
-given (e.g. the partner asks "write a SOW for Shopify to SAP" with only a
-one-line description, or pastes raw call notes), do not invent one and do
-not draft from the raw material directly. Say that a SOW is built from a
-Discovery Summary, and offer to create one first from their call notes or
-transcript (via `requirement-digest`). Only continue with this skill once a
-summary exists.
+**First, make sure a SOW is actually what's being asked for.** If the
+partner's message is a request to *build* something (e.g. "When X happens,
+create Y … Build it in <org>"), that's `workflow-creator`'s job, not a SOW
+— even if a SOW was discussed earlier in the conversation. Ask in one line
+("Do you want me to build this workflow, or write a SOW for it?") rather
+than assuming.
+
+**Then check the input.** The best input is a **Discovery Summary** (the
+output of `requirement-digest`; use that name, not "Requirement Digest",
+with partners) — its Stated/Inferred tags are what keep the SOW honest. It
+is **recommended, not required**:
+- If the partner gives a Discovery Summary, use it as described in Steps
+  2–8.
+- If they give raw material instead (a brief, call notes, requirements),
+  offer once: _"I can turn this into a Discovery Summary first, which
+  separates what the customer confirmed from what we're assuming — or I can
+  draft the SOW straight from it. Which would you prefer?"_ If they choose to
+  draft directly, do so: treat what the material states plainly as
+  deliverables, and put everything you'd have to infer into Assumptions
+  (Step 6), phrased for the customer to confirm. Don't block on missing
+  fields — list them under Exclusions or Assumptions.
+- Only if there's essentially nothing to work from (e.g. "write a SOW for
+  Shopify to SAP" and nothing else), ask for the brief or notes before
+  drafting.
 
 Then, **before drafting anything**, ask whether the partner has their own SOW
 template or house format they want this followed against (a document to
@@ -286,9 +301,12 @@ existing file.
 
 ## Output Rules
 
-- Never draft a SOW without a Discovery Summary (Requirement Digest) — if
-  none is given, offer to create one first; never fabricate one from a
-  one-line request
+- A Discovery Summary is recommended, not required — if the partner gives
+  raw material, offer once to create one; if they'd rather draft directly,
+  draft from the material, with anything inferred going into Assumptions.
+  Never invent requirements from a one-line request
+- If the request is to build a workflow rather than write a SOW, ask which
+  they want — don't treat a workflow scenario as SOW input
 - Refer to the input as the "Discovery Summary" when talking to the
   partner, not "Requirement Digest"
 - Always ask for the partner's own SOW format before drafting anything —

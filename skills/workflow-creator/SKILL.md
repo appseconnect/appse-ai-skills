@@ -13,7 +13,9 @@ description: >
   building.
   Always confirms org, app connections, and field mappings before writing
   anything. Source app, target app, and entity type are supplied by the user
-  each run — none are hardcoded.
+  each run — none are hardcoded. Works straight from a plain scenario or
+  requirements brief (e.g. "When X happens in App A, do Y in App B … Build
+  it in <org>") — no Discovery Summary or SOW is needed first.
 ---
 
 # workflow-creator — Build Two-App Sync Workflow(s)
@@ -21,6 +23,15 @@ description: >
 Builds workflows: a trigger in a source app creates, updates, or reconciles a
 matching record in a target app. Source app, target app, and entity type
 (e.g. "customer", "product", "order") are given by the user, not assumed.
+
+**Start from whatever the partner gives you.** A one-line request, a
+scenario brief, customer requirements, call notes — all are valid input.
+A Discovery Summary or SOW is **not** a prerequisite: don't ask for one or
+route the partner to another skill first. If they do provide one, use it as
+extra context (e.g. its [Inferred] facts become proposed mappings or
+questions). Gaps in a brief are handled by this skill's own steps — Step 6's
+mapping ladder, the expert review, and Step 9's summary — not by sending the
+partner elsewhere.
 
 **Each workflow maps to exactly one triggering business event — never more,
 never less.** Workflows are drawn from the partner's paid allocation, so how
