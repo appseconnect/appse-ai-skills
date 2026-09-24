@@ -1,0 +1,337 @@
+{
+    "nodes": [
+        {
+            "id": "d0c3e827-5924-4526-8f18-dc068ef34715",
+            "data": {
+                "app": {
+                    "code": "shopify",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/shopify-icon.svg",
+                    "doc_url": "/app-integrations/shopify",
+                    "category": [
+                        "Ecommerce"
+                    ],
+                    "has_tools": false,
+                    "description": "A leading eCommerce platform for creating online stores, managing products, and processing orders.",
+                    "has_actions": true,
+                    "display_name": "Shopify",
+                    "has_triggers": true
+                },
+                "idx": 1,
+                "cron": "*/3 * * * *",
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": false
+                },
+                "properties": {
+                    "limit": "10",
+                    "since_from": "2026-03-19T11:38:00.000Z"
+                },
+                "action_code": "on_new_orders_created",
+                "action_name": "New orders created",
+                "current_name": "Shopify",
+                "original_name": "Shopify",
+                "next_data_from_template": "={{date_max_by($payload[*],&createdAt) }}"
+            },
+            "type": "AppTriggerNode",
+            "dragging": true,
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": -850,
+                "y": -250
+            },
+            "selected": false,
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "56a181c4-bb59-4474-be14-418f0ecd6aad",
+            "data": {
+                "app": {
+                    "code": "dynamics365businesscentral",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/dynamics365bc-icon.svg",
+                    "doc_url": "/app-integrations/dynamics-365-business-central",
+                    "category": [
+                        "ERP"
+                    ],
+                    "has_tools": false,
+                    "description": "Microsoft’s all-in-one ERP system for managing finance, operations, inventory, and sales.",
+                    "has_actions": true,
+                    "display_name": "Dynamics 365 Business Central",
+                    "has_triggers": true
+                },
+                "idx": 4,
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": false
+                },
+                "properties": {
+                    "number": "={{substringAfter($('Shopify').payload.id,'gid://shopify/Order/')}}",
+                    "orderDate": "={{substringBefore($('Shopify').payload.createdAt,'T')}}",
+                    "customerNumber": "={{$('Dynamics 365 Business Central 1').payload.number}}",
+                    "salesOrderLines": [
+                        {
+                            "lineType": "Item",
+                            "quantity": "={{$('Shopify').payload.lineItems.nodes[].quantity}}",
+                            "unitPrice": "={{$('Shopify').payload.lineItems.nodes[].originalUnitPriceSet.presentmentMoney.amount}}",
+                            "lineObjectNumber": "={{$('Shopify').payload.lineItems.nodes[].sku}}"
+                        }
+                    ]
+                },
+                "action_code": "create_salesorder",
+                "action_name": "Create a new sales order",
+                "current_name": "Dynamics 365 Business Central",
+                "original_name": "Dynamics 365 Business Central"
+            },
+            "type": "AppNode",
+            "dragging": true,
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": 125,
+                "y": -275
+            },
+            "selected": false,
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "e3ed575a-d68f-4a37-be93-b2ecc58389f3",
+            "data": {
+                "app": {
+                    "code": "dynamics365businesscentral",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/dynamics365bc-icon.svg",
+                    "doc_url": "/app-integrations/dynamics-365-business-central",
+                    "category": [
+                        "ERP"
+                    ],
+                    "has_tools": false,
+                    "description": "Microsoft’s all-in-one ERP system for managing finance, operations, inventory, and sales.",
+                    "has_actions": true,
+                    "display_name": "Dynamics 365 Business Central",
+                    "has_triggers": true
+                },
+                "idx": 2,
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": true
+                },
+                "properties": {
+                    "email": "={{$payload.customer.email}}"
+                },
+                "action_code": "get_customer_by_email",
+                "action_name": "Get customer by email",
+                "current_name": "Dynamics 365 Business Central 1",
+                "original_name": "Dynamics 365 Business Central"
+            },
+            "type": "AppNode",
+            "dragging": true,
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": -525,
+                "y": -250
+            },
+            "selected": false,
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "6f7260d5-4a42-40c8-bcba-136e87647132",
+            "data": {
+                "idx": 3,
+                "settings": {
+                    "disable_case_sensitivity": false
+                },
+                "properties": {
+                    "advance_filter": [
+                        [
+                            {
+                                "operator": {
+                                    "type": "basic",
+                                    "operation": "exist"
+                                },
+                                "leftValue": "={{$payload.number}}",
+                                "rightValue": ""
+                            }
+                        ]
+                    ]
+                },
+                "current_name": "Decision",
+                "original_name": "Decision"
+            },
+            "type": "DecisionNode",
+            "dragging": true,
+            "measured": {
+                "width": 136,
+                "height": 120
+            },
+            "position": {
+                "x": -200,
+                "y": -275
+            },
+            "selected": false,
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "3cf5c145-5b0e-4054-9679-3d685cf6d103",
+            "data": {
+                "app": {
+                    "code": "dynamics365businesscentral",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/dynamics365bc-icon.svg",
+                    "doc_url": "/app-integrations/dynamics-365-business-central",
+                    "category": [
+                        "ERP"
+                    ],
+                    "has_tools": false,
+                    "description": "Microsoft’s all-in-one ERP system for managing finance, operations, inventory, and sales.",
+                    "has_actions": true,
+                    "display_name": "Dynamics 365 Business Central",
+                    "has_triggers": true
+                },
+                "idx": 6,
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": false
+                },
+                "properties": {
+                    "number": "={{substringAfter($('Shopify').payload.id,'gid://shopify/Order/')}}",
+                    "orderDate": "={{substringBefore($('Shopify').payload.createdAt,'T')}}",
+                    "customerNumber": "={{substringAfter($('Shopify').payload.customer.id,'gid://shopify/Customer/')}}",
+                    "salesOrderLines": [
+                        {
+                            "lineType": "Item",
+                            "quantity": "={{$('Shopify').payload.lineItems.nodes[].quantity}}",
+                            "unitPrice": "={{$('Shopify').payload.lineItems.nodes[].originalUnitPriceSet.presentmentMoney.amount}}",
+                            "lineObjectNumber": "={{$('Shopify').payload.lineItems.nodes[].sku}}"
+                        }
+                    ]
+                },
+                "action_code": "create_salesorder",
+                "action_name": "Create a new sales order",
+                "current_name": "Dynamics 365 Business Central 2",
+                "original_name": "Dynamics 365 Business Central"
+            },
+            "type": "AppNode",
+            "dragging": true,
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": 450,
+                "y": -50
+            },
+            "selected": false,
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "74b0b667-d799-4342-bdf5-a1c17b385164",
+            "data": {
+                "app": {
+                    "code": "dynamics365businesscentral",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/dynamics365bc-icon.svg",
+                    "doc_url": "/app-integrations/dynamics-365-business-central",
+                    "category": [
+                        "ERP"
+                    ],
+                    "has_tools": false,
+                    "description": "Microsoft’s all-in-one ERP system for managing finance, operations, inventory, and sales.",
+                    "has_actions": true,
+                    "display_name": "Dynamics 365 Business Central",
+                    "has_triggers": true
+                },
+                "idx": 5,
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": false
+                },
+                "properties": {
+                    "type": "Person",
+                    "email": "={{$('Shopify').payload.customer.email}}",
+                    "number": "={{substringAfter($('Shopify').payload.customer.id,'gid://shopify/Customer/')}}",
+                    "displayName": "={{$('Shopify').payload.billingAddress.firstName}} {{$('Shopify').payload.billingAddress.lastName}}"
+                },
+                "action_code": "create_customer",
+                "action_name": "Create a new customer",
+                "current_name": "Dynamics 365 Business Central 3",
+                "original_name": "Dynamics 365 Business Central"
+            },
+            "type": "AppNode",
+            "dragging": true,
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": 25,
+                "y": -50
+            },
+            "selected": false,
+            "zIndex": "$undefined"
+        }
+    ],
+    "edges": [
+        {
+            "id": "75708518-d838-4ab5-84a7-1b5dd39db254",
+            "source": "d0c3e827-5924-4526-8f18-dc068ef34715",
+            "target": "e3ed575a-d68f-4a37-be93-b2ecc58389f3",
+            "sourceHandle": "default",
+            "targetHandle": "default"
+        },
+        {
+            "id": "e1193304-59a7-4cf9-9967-373b6430fafe",
+            "source": "e3ed575a-d68f-4a37-be93-b2ecc58389f3",
+            "target": "6f7260d5-4a42-40c8-bcba-136e87647132",
+            "sourceHandle": "default",
+            "targetHandle": "default"
+        },
+        {
+            "id": "3b711c41-5860-4def-a086-4476b3b4b2a0",
+            "type": "ActionEdge",
+            "source": "6f7260d5-4a42-40c8-bcba-136e87647132",
+            "target": "56a181c4-bb59-4474-be14-418f0ecd6aad",
+            "selected": false,
+            "markerEnd": {
+                "type": "arrowclosed",
+                "color": "#64748b",
+                "width": 22,
+                "height": 22
+            },
+            "sourceHandle": "true",
+            "targetHandle": "default"
+        },
+        {
+            "id": "cd14341f-1b6b-4dd6-ae51-216d9e10e51e",
+            "source": "6f7260d5-4a42-40c8-bcba-136e87647132",
+            "target": "74b0b667-d799-4342-bdf5-a1c17b385164",
+            "sourceHandle": "false",
+            "targetHandle": "default"
+        },
+        {
+            "id": "857a5a58-944a-4e35-af63-24e25277c434",
+            "source": "74b0b667-d799-4342-bdf5-a1c17b385164",
+            "target": "3cf5c145-5b0e-4054-9679-3d685cf6d103",
+            "sourceHandle": "default",
+            "targetHandle": "default"
+        }
+    ],
+    "viewport": {
+        "x": 777.5584415584416,
+        "y": 483.24675324675326,
+        "zoom": 0.7194805194805195
+    }
+}

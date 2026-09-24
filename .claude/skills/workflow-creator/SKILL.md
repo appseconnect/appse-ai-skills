@@ -155,6 +155,7 @@ Read the local file directly — no MCP call needed for these:
 |---|---|---|
 | `references/pattern-dedupe-skip-return-request.json` | Search for a match on a stable key → if found, stop (no edge on the "exists" branch) | The user wants "don't create duplicates," with no update requirement |
 | `references/pattern-dedupe-create-or-update-customer.json` and `references/pattern-dedupe-create-or-update-businesspartner-subrecords.json` | Search for a match → `DecisionNode`, **both branches wired**: create if not found, update if found | Two independent confirmed examples, different app pairs. Use the `-subrecords` file specifically when the update touches a nested array field (e.g. addresses) — it shows how to preserve the original record's row identifier so the update doesn't duplicate the sub-record. |
+| `references/pattern-find-or-create-customer-then-order.json` | Search for a parent record → `DecisionNode`: if found, create the child using the found parent's key; if not found, create the parent **then** the child in sequence | The child record (e.g. a sales order) can't be created without a parent (e.g. a customer) that may not exist yet — and the "found" branch should reuse the parent, not update it |
 | `references/pattern-sku-reconciliation-and-multibranch-order.json` | `SplitterNode` fans out line items → per-item existence check → create if missing | The workflow involves reconciling a list of sub-records (e.g. order line items against an item master) — **use only the SplitterNode → Get Item → Filter → Create Item portion of this file; the AI-node (`get_chat_completions`) reconciliation portion in this same file is not an approved pattern, see below** |
 | `references/pattern-parallel-branch-inventory-notification.json` | Multiple independent branches fan out directly from one trigger (not sequential) | The business process needs more than one independent thing to happen off the same event (e.g. update a record AND separately notify on a condition) |
 
@@ -193,7 +194,7 @@ file verbatim.
 | `target_app` | ✅ | `list_apps`, user confirms if ambiguous | App the action writes to, per workflow | — |
 | `trigger_operation` | ✅ | `list_operations`, user confirms if ambiguous | The "new/updated {entity_type}" trigger, per workflow | — |
 | `action_operation` | ✅ | `list_operations`, user confirms if ambiguous | The "create/update {entity_type}" action, per workflow | — |
-| `structural_pattern` | ✅ | Assessed by the skill in Step 0, confirmed with user | Which Reference Pattern shape this workflow needs (simple / dedupe-skip / dedupe-create-or-update / SKU-reconciliation / parallel-branch) | — |
+| `structural_pattern` | ✅ | Assessed by the skill in Step 0, confirmed with user | Which Reference Pattern shape this workflow needs (simple / dedupe-skip / dedupe-create-or-update / find-or-create-parent-then-child / SKU-reconciliation / parallel-branch) | — |
 | `field_mappings` | ⬜ | `query-docs` (first pass) + `get_operation_detail` (governs); else ask user | Source field → target field mapping, per workflow | No default — do not assume standard fields across arbitrary apps/entities |
 | `since_from` | ⬜ | User input, if trigger is polling-based | Trigger start date/time | now |
 | `limit` | ⬜ | User input, if trigger is polling-based | Records per request | 10 |
@@ -253,10 +254,27 @@ Call `list_organizations`. If more than one is active, stop and ask which
 `org_id` to use. **Never reuse an org_id from a previous run or conversation.**
 
 ### Step 2 — Confirm Apps Are Connected
-Call `list_apps`, then `list_credentials`. Confirm both `source_app` and
-`target_app` have an actual **saved credential** — a catalog entry with no
-credential at all is not enough, and this still stops the run. If either has
-no credential saved, stop and report exactly which one.
+Call `list_apps`, then `list_credentials`. Confirm every app the workflow
+will use — `source_app`, `target_app`, and any app needed only for an extra
+lookup/search node — has an actual **saved credential** in this org. A
+catalog entry with no credential at all is not enough.
+
+**If any app has no saved credential, pause and ask the partner to add it —
+do not end the run:**
+
+> "To build this, **{app}** needs to be connected in **{org}**, but I don't
+> see a saved connection for it yet. Please add one in the appse ai portal
+> (Credentials → Add credential → {app}), then tell me when it's done and
+> I'll pick up from here."
+
+Name every missing app in one message, not one at a time. When the partner
+says it's done, call `list_credentials` again and confirm the credential now
+exists before continuing to Step 3. If it still isn't there, say so plainly
+and ask again — never proceed without it, and never build the workflow with
+a node that has no credential attached.
+
+Record the credential `id` found for each app here — Step 10 attaches it to
+every node for that app.
 
 If an app name matches more than one catalog entry (e.g. a cloud vs. on-prem
 variant), and only one of them has a saved credential, state which one will
@@ -327,14 +345,43 @@ actually required live.
 - **If `get_operation_detail` only returns shallow/top-level required fields**
   for an object- or array-typed parameter (e.g. it says a `product` object or
   a `media` array is required, but not what's inside them), that is not
-  sufficient to proceed — treat the internal shape as still unresolved and
-  apply the rule below (ask, or a confirmed guess), rather than treating the
-  top-level type alone as enough information to map against.
-- If neither source resolves a required target field (or its internal
-  shape), ask the user to supply it, or confirm a small set of guessed names
-  explicitly — do not proceed on an unconfirmed guess.
-- If a required target field still has no plausible source after this, stop
-  and report exactly which field is unmapped.
+  sufficient to proceed — treat the internal shape as still unresolved: use
+  documentation or a reference file that shows that shape, otherwise ask,
+  rather than treating the top-level type alone as enough information to
+  map against. (This is about an unknown *shape*; once the shape is known,
+  filling its mandatory fields follows the ladder below.)
+- **Every mandatory target field must get a value — never leave one empty
+  or send `""`.** An empty mandatory field is a broken workflow, not a
+  cautious one. Work through this ladder, in order, and use the first rung
+  that gives a sensible value:
+  1. **Direct source field** — a matching field in the source payload,
+     confirmed by docs or the live call (e.g. email → email).
+  2. **Derived with an expression function** — build the value from source
+     fields using the confirmed functions in `references/conventions.md`
+     (e.g. strip a Shopify GID to its numeric ID with `substringAfter`,
+     join first + last name, take the date part of a timestamp with
+     `substringBefore`). This is usually the answer for IDs and keys.
+  3. **Pattern from a reference file** — how a reference workflow filled
+     the same kind of field (e.g. `pattern-find-or-create-customer-then-order.json`
+     sets the Business Central customer number from the Shopify customer's
+     numeric ID). Reuse the *approach*, re-derived for this workflow's own
+     payload — never paste the reference's literal expression.
+  4. **Sensible constant** — a fixed value where the context makes it clear
+     (e.g. customer type `Person` for Shopify shoppers, `C`/customer for an
+     SAP B1 Business Partner created from a customer).
+  5. **Ask** — only if no rung above gives a plausible value, ask the
+     partner for that field before Step 9. Name the field and what it's for.
+- Anything filled from rungs 2–4 is a **proposed mapping**: fine to use, but
+  it must be listed separately in Step 9 and Step 11 with a one-line reason,
+  so the partner can see it and override it. Proposing an informed mapping
+  and saying so is expected; silently inventing one, or leaving the field
+  blank, is not.
+- If the partner has said the target system should generate a value itself
+  (e.g. "use Business Central's own numbering") but the live call still marks
+  that field required, don't send it empty — propose a derived value (rung
+  2/3) and explain in Step 9 that the field is required by the connector, so
+  the target's own numbering can only be used if they confirm the field can
+  be left out.
 - If a mandatory field's real-world data source is unlikely to exist (e.g. an
   action requires images/media but the source app's records don't typically
   carry structured media data), say so explicitly and recommend a simpler
@@ -363,8 +410,8 @@ Using the `structural_pattern` identified in Step 0, select the matching
 Reference Pattern:
 - **Simple sync** → call `get_workflow` on the live reference workflow (see
   Reference Patterns above).
-- **Any branching pattern** (dedupe-skip, dedupe-create-or-update, SKU-
-  reconciliation, parallel-branch) → read the matching local file directly
+- **Any branching pattern** (dedupe-skip, dedupe-create-or-update,
+  find-or-create-parent-then-child, SKU-reconciliation, parallel-branch) → read the matching local file directly
   from `references/` — no MCP call needed.
 
 Apply the structure only — never literal field values, credential IDs, or
@@ -382,9 +429,16 @@ Tone guidance above):
 > I'm about to build a workflow in **{org}**: when **{trigger, in source_app}**
 > happens, **{action, in target_app}**, for entity type **{entity_type}**,
 > using the **{structural_pattern}** shape, with these field mappings:
-> {list, marking which are assumptions and which are not cross-checked
-> against documentation}. {If shape is more complex than any single
-> reference, or combines patterns, say so here.} Shall I go ahead?
+> {list of direct mappings, marking any not cross-checked against
+> documentation}.
+>
+> **Mappings I worked out for you — please check:**
+> - **{target field}** ← `{expression}` — {one-line reason, e.g. "Customer
+>   number is required, so I'm using the Shopify customer's numeric ID"}
+>
+> {If shape is more complex than any single reference, or combines
+> patterns, say so here.} If you'd like any of these mapped differently,
+> tell me what to use and I'll update it. Otherwise, shall I go ahead?
 
 Wait for explicit confirmation. Do not proceed on an ambiguous or implied yes.
 
@@ -393,10 +447,27 @@ Call `create_workflow`, then `save_workflow` using the envelope structure
 learned in Step 8, the field mappings from Steps 6–7, and this workflow's own
 trigger and action.
 
+**Attach a credential to every app node, including the trigger.** Set
+`data.credential_id` on each `AppTriggerNode` and `AppNode` to the
+credential `id` recorded in Step 2 for that node's app. (Decision, Filter,
+and other non-app nodes don't take one.) The trigger is the easiest to miss
+— a trigger with no credential can never run.
+
+**Then verify:** call `get_workflow` on the workflow just saved and check
+that every `AppTriggerNode`/`AppNode` has a `credential_id` matching Step 2,
+**and that no mandatory field (per Step 6) is missing or `""`.** If either
+check fails, report exactly which node/field — do not tell the partner the
+build is complete.
+
 ### Step 11 — Report Back Plainly
 State: workflow name and ID, exact trigger and action used, every field
-mapping applied, and which mappings were assumptions, unconfirmed, or
-documentation-confirmed. This is what the user checks against the appse ai
+mapping applied, and which mappings were documentation-confirmed,
+unconfirmed, or **proposed by you** (Step 6 rungs 2–4). Repeat the proposed
+ones as a short list with their reasons, and close with: _"If any of these
+should come from somewhere else, tell me what to use and I'll update the
+workflow."_ If the partner then asks for a change, update this same workflow
+(read it with `get_workflow`, change only the named fields, `save_workflow`)
+rather than creating a new one. This is what the user checks against the appse ai
 UI once it's reachable — the build itself is safely persisted regardless of
 UI availability, so a UI outage delays verification, not the build's
 validity (state this plainly, without naming the database or any internal
@@ -424,7 +495,7 @@ list_credentials
 list_operations
 get_operation_detail
 list_workflows
-get_workflow → restricted: live simple-pattern reference workflow only
+get_workflow → restricted to exactly two targets: (1) the live simple-pattern reference workflow, structure only (Step 8); (2) the workflow this run just created — to verify credentials and mandatory fields (Step 10) and to apply mapping changes the partner asks for (Step 11). Never any other workflow.
 create_workflow
 save_workflow
 ```
@@ -448,6 +519,7 @@ or use one to justify expanding the other.
 references/pattern-dedupe-skip-return-request.json
 references/pattern-dedupe-create-or-update-customer.json
 references/pattern-dedupe-create-or-update-businesspartner-subrecords.json
+references/pattern-find-or-create-customer-then-order.json
 references/pattern-sku-reconciliation-and-multibranch-order.json
 references/pattern-parallel-branch-inventory-notification.json
 references/conventions.md
@@ -569,6 +641,11 @@ conversation.)*
   events; explain why and propose the correct split instead of complying.
 - Always re-resolve `org_id` every run — never assume the last-used org still
   applies.
+- Always check every app the workflow uses has a saved credential before
+  building. If one is missing, ask the partner to add it in the portal, wait,
+  re-check with `list_credentials`, then continue — never build without it.
+- Always attach the credential to every app node, including the trigger, and
+  verify with `get_workflow` after saving.
 - Use documentation as a first-pass, not final, source for field
   requirements — the live operation-detail call always governs when they
   disagree.
@@ -582,9 +659,14 @@ conversation.)*
 - Never guess field-reference expression syntax, or Decision/Filter
   condition shape — use the documented forms from Documentation Reference
   and Reference Patterns, never invented syntax or structure.
-- Never guess a data-shape, field mapping, app/operation identity, or
-  structural pattern that no source resolves — stop and ask, or get explicit
-  confirmation on a small guessed set.
+- Never leave a mandatory field empty or send `""`. Fill it using the Step 6
+  ladder (direct field → expression function → reference-pattern approach →
+  sensible constant), list every proposed mapping with its reason in Steps 9
+  and 11, and only ask when no rung gives a plausible value.
+- Never silently invent a data-shape, app/operation identity, or structural
+  pattern that no source resolves — stop and ask, or get explicit
+  confirmation. (Proposed field mappings are different: make them, and
+  disclose them.)
 - Never expand tool access mid-run — if the allowed tools aren't enough, stop
   and say so (in plain language, per Tone); don't request ad hoc access in
   the moment.
