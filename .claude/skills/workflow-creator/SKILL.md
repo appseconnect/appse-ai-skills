@@ -2,21 +2,23 @@
 name: workflow-creator
 description: >
   Builds one or more appse ai workflows — each a trigger in one connected app
-  that creates or updates a matching record in another connected app — via
-  arise-mcp. Use when the user asks to create, build, or sync a workflow (or
-  a set of workflows, e.g. "the full sales cycle") between named apps for a
-  named entity. Always decomposes multi-event requests into separate
-  workflows, confirms the total count against the partner's allocation
-  before building, and confirms org, app connections, and field mappings
-  before writing anything. Source app, target app, and entity type are
-  supplied by the user each run — none are hardcoded.
+  that creates, updates, or reconciles records in another connected app —
+  via arise-mcp. Use when the user asks to create, build, or sync a workflow
+  (or a set of workflows, e.g. "the full sales cycle") between named apps for
+  a named entity. Presents a plan of the workflow(s) needed — including which
+  structural pattern each one requires (simple sync, dedupe-and-skip,
+  create-or-update, SKU/item reconciliation, or parallel branching) — and
+  lets the user decide the final count and combination before building.
+  Always confirms org, app connections, and field mappings before writing
+  anything. Source app, target app, and entity type are supplied by the user
+  each run — none are hardcoded.
 ---
 
 # workflow-creator — Build Two-App Sync Workflow(s)
 
-Builds workflows: a trigger in a source app creates/updates a matching record
-in a target app. Source app, target app, and entity type (e.g. "customer",
-"product", "order") are given by the user, not assumed.
+Builds workflows: a trigger in a source app creates, updates, or reconciles a
+matching record in a target app. Source app, target app, and entity type
+(e.g. "customer", "product", "order") are given by the user, not assumed.
 
 **Each workflow maps to exactly one triggering business event — never more,
 never less.** Workflows are drawn from the partner's paid allocation, so how
@@ -53,9 +55,9 @@ plain business language instead. For example:
 
 This applies everywhere partner-facing text is generated — Step 9's summary,
 Step 11's report, and any clarifying question — not just one example. (The
-Known Limits and Allowed Tools sections of this file are internal
-documentation for whoever maintains this skill, not partner-facing, and are
-unaffected by this rule.)
+Known Limits, Allowed Tools, and Reference Patterns sections of this file are
+internal documentation for whoever maintains this skill, not partner-facing,
+and are unaffected by this rule.)
 
 The goal is a partner coming away feeling like they have a capable teammate,
 not like they're being warned away from using it, and never feeling like
@@ -109,6 +111,10 @@ Context7 MCP tools (see Allowed Tools — Documentation Access below):
 - `docs/platform/key_concepts/expressions_mapping/` — the actual field-
   reference expression syntax, confirmed correct (see Step 7).
 
+Context7 covers **field-level, per-app documentation** — it does not cover
+generic node-type structure (Decision, Filter, Splitter, JsonConverter).
+For that, see Reference Patterns below.
+
 **Known discrepancy — treat docs as a cross-check, not ground truth:** for
 SAP Business One's `Create New Business Partner`, live `get_operation_detail`
 reported `CardType` as required; the docs page does not mention it at all.
@@ -125,14 +131,16 @@ same confidence as a docs-confirmed one.
 
 ---
 
-## Reference Workflow (structure only — envelope shape, not field syntax)
+## Reference Patterns (structure only — never literal field values)
 
 `save_workflow` requires the full flow as JSON (nodes, edges, and how each
-node is tied to an app/operation). **This structural envelope is not
-documented in appse-ai-docs** — the docs cover the visual canvas and the
-expression language, not the underlying API payload shape. Until a
-documented source exists, learn the envelope shape from exactly one
-workflow, never any other:
+node is tied to an app/operation). This structure is not documented in
+appse-ai-docs, so it's learned from real, known-working examples. **Every
+pattern below is real exported data — read for structure only, never reuse
+literal field values, credential IDs, or app-specific mappings from them.**
+
+### Simple sync (one trigger, one action, no branching)
+Live reference, fetched via `get_workflow` (see Allowed Tools):
 
 | Field | Value |
 |---|---|
@@ -140,12 +148,37 @@ workflow, never any other:
 | ID | `a0e88805-6d64-4110-b5e7-42bf93c3d74d` |
 | URL | https://workflow.insync.top/workflows/a0e88805-6d64-4110-b5e7-42bf93c3d74d/editor |
 
-Use it **only** for node/edge structure — never its literal field values,
-and never for expression syntax (see Step 7 for the correct, documented
-syntax instead). This reference was validated only for a **simple
-one-trigger, one-action shape**. If a workflow being built has multiple
-actions, branching, or an approval gate, say so explicitly in the
-confirmation summary — the reference may not fully cover that shape.
+### Branching patterns (local files, in `references/` alongside this file)
+Read the local file directly — no MCP call needed for these:
+
+| File | Pattern | Use when |
+|---|---|---|
+| `references/pattern-dedupe-skip-return-request.json` | Search for a match on a stable key → if found, stop (no edge on the "exists" branch) | The user wants "don't create duplicates," with no update requirement |
+| `references/pattern-dedupe-create-or-update-customer.json` and `references/pattern-dedupe-create-or-update-businesspartner-subrecords.json` | Search for a match → `DecisionNode`, **both branches wired**: create if not found, update if found | Two independent confirmed examples, different app pairs. Use the `-subrecords` file specifically when the update touches a nested array field (e.g. addresses) — it shows how to preserve the original record's row identifier so the update doesn't duplicate the sub-record. |
+| `references/pattern-sku-reconciliation-and-multibranch-order.json` | `SplitterNode` fans out line items → per-item existence check → create if missing | The workflow involves reconciling a list of sub-records (e.g. order line items against an item master) — **use only the SplitterNode → Get Item → Filter → Create Item portion of this file; the AI-node (`get_chat_completions`) reconciliation portion in this same file is not an approved pattern, see below** |
+| `references/pattern-parallel-branch-inventory-notification.json` | Multiple independent branches fan out directly from one trigger (not sequential) | The business process needs more than one independent thing to happen off the same event (e.g. update a record AND separately notify on a condition) |
+
+See `references/conventions.md` for full detail on each file, including
+confirmed node-type syntax (`DecisionNode` true/false handles, `FilterNode`
+single-output semantics, `SplitterNode`, `JsonConverterNode`) and what is
+still **not** confirmed by any reference (a multi-criterion entity-resolution
+fallback cascade, e.g. email → phone → name, has no known-working example
+yet — do not attempt to build one without stopping to ask first).
+
+**On the AI-node pattern specifically:** one reference file contains a real,
+working example of an AI node (`get_chat_completions`) used mid-workflow for
+reconciliation logic, feeding a `JsonConverterNode`. **Do not replicate this
+pattern in any build unless the user has explicitly asked for AI-assisted
+reconciliation/validation and confirmed they understand it calls a
+language model as part of the workflow.** This is real capability, not
+partner-facing terminology to hide — but it changes the nature of the
+workflow's failure modes and cost, so it needs to be an explicit choice, not
+something the skill reaches for on its own.
+
+Any pattern's shape can also be simplified down from what's in these files —
+e.g. a workflow needing only a subset of a reference's branches should use
+only that subset, following the same envelope conventions, not the full
+file verbatim.
 
 ---
 
@@ -160,6 +193,7 @@ confirmation summary — the reference may not fully cover that shape.
 | `target_app` | ✅ | `list_apps`, user confirms if ambiguous | App the action writes to, per workflow | — |
 | `trigger_operation` | ✅ | `list_operations`, user confirms if ambiguous | The "new/updated {entity_type}" trigger, per workflow | — |
 | `action_operation` | ✅ | `list_operations`, user confirms if ambiguous | The "create/update {entity_type}" action, per workflow | — |
+| `structural_pattern` | ✅ | Assessed by the skill in Step 0, confirmed with user | Which Reference Pattern shape this workflow needs (simple / dedupe-skip / dedupe-create-or-update / SKU-reconciliation / parallel-branch) | — |
 | `field_mappings` | ⬜ | `query-docs` (first pass) + `get_operation_detail` (governs); else ask user | Source field → target field mapping, per workflow | No default — do not assume standard fields across arbitrary apps/entities |
 | `since_from` | ⬜ | User input, if trigger is polling-based | Trigger start date/time | now |
 | `limit` | ⬜ | User input, if trigger is polling-based | Records per request | 10 |
@@ -170,27 +204,43 @@ confirmation summary — the reference may not fully cover that shape.
 
 Follow these steps in order. Do not skip or reorder.
 
-### Step 0 — Decompose Scope and Confirm Workflow Count
-Before anything else: does `requested_scope` correspond to one triggering
-business event, or several?
+### Step 0 — Assess, Plan, and Confirm Scope
+Before anything else, do two things together:
 
-- If it spans more than one distinct triggering event (e.g. "the full sales
-  cycle" implies order created, payment received, shipment created, invoice
-  generated — each a separate event), **break it into the explicit list of
-  separate workflows it requires.** Do not build a single workflow that
-  internally handles multiple unrelated trigger events — this holds even if
-  the user explicitly asks for them to be combined; explain the reasons
-  (allocation model, envelope shape only validated for single-trigger,
-  operational clarity) and propose the correct decomposition instead.
-- Present the full list and total count to the user **before building
-  anything**, stated plainly and confidently, e.g.:
-  > "This covers **{n} separate workflows**: {list, one line each — trigger →
-  > action}. This will use {n} workflows from your allocation — let me know
-  > if that works for you."
-- Wait for the user to confirm the full set (or a subset) before proceeding
-  to Step 1 for each workflow in the confirmed set.
+**a) Decompose by business event**, as before: if `requested_scope` spans
+more than one distinct triggering event (e.g. "the full sales cycle" implies
+order created, payment received, shipment created, invoice generated — each
+a separate event), break it into the explicit list of separate workflows it
+requires. Do not build a single workflow that internally handles multiple
+unrelated trigger events — this holds even if the user explicitly asks for
+them to be combined; explain the reasons (allocation model, envelope shape
+only validated per-pattern, operational clarity) and propose the correct
+decomposition instead.
+
+**b) Assess structural pattern and performance shape, per workflow**: for
+each workflow in the decomposition, identify which Reference Pattern it
+needs (simple / dedupe-skip / dedupe-create-or-update / SKU-reconciliation /
+parallel-branch), and whether the downstream processing for a single trigger
+event would be heavy enough (multiple lookups, a reconciliation cascade,
+several dependent branches) that splitting it further — even within one
+business event — would keep each workflow simpler and faster to run. This is
+a qualitative judgment call, not an enforced threshold (no real execution-
+time data exists yet to set one — see Known Limits); when genuinely
+uncertain, present it as a trade-off in the plan rather than deciding
+silently.
+
+**Then present a plan, not just a count**, and let the user decide:
+> "This covers **{n} workflow(s)**: {for each — trigger → action, and which
+> structural pattern it needs, e.g. 'dedupe-and-update' or 'simple sync'}.
+> {If a genuine alternative decomposition exists — e.g. finer-grained for
+> performance vs. fewer, larger workflows — present both with trade-offs.}
+> This will use {n} workflows from your allocation. Which would you like to
+> go with?"
+
+- Wait for the user to confirm the plan (or a modified version of it) before
+  proceeding to Step 1 for each workflow in the confirmed set.
 - Never create multiple workflows one at a time without having shown this
-  total count up front.
+  plan up front.
 - This skill cannot currently check remaining allocation balance — no
   internal tool exposes it. State the count being requested plainly (per
   Tone above — no hedging, and no naming of internal tools). Do not claim to
@@ -245,6 +295,11 @@ cloud and an on-prem/DIS variant), stop and confirm which one is meant before
 proceeding — unless Step 2 already resolved it because only one had a usable
 credential, in which case do not ask again.
 
+If `structural_pattern` requires additional operations beyond the base
+trigger/action (e.g. a search/lookup action for dedupe patterns, or an
+item-lookup action for SKU reconciliation), find and confirm those here too,
+using the same ambiguity rules.
+
 ### Step 5 — Check Operation Stage
 Both `release` and `preview` stage operations are acceptable to use, with no
 extra confirmation needed. **Never use a `dev`-stage operation** — if the
@@ -298,22 +353,38 @@ unsure), **not** `{{trigger.field}}`:
   support `[*]`, indexing, and filter expressions — only use these if the
   mapping genuinely needs them.
 
+For `DecisionNode`/`FilterNode` conditions specifically, see
+`references/conventions.md` for the confirmed `advance_filter` structure
+(operator type/operation, leftValue, rightValue) rather than inventing a
+condition shape.
+
 ### Step 8 — Learn the Envelope Structure
-Call `get_workflow` on the Reference Workflow above only, to learn the
-node/edge JSON shape (not field syntax — that's fixed by Step 7). Apply the
-structure, never its field values. If this workflow's shape is more complex
-than the reference (multiple actions, branching, approval gate), flag this
-explicitly in Step 9 rather than silently assuming the reference covers it.
+Using the `structural_pattern` identified in Step 0, select the matching
+Reference Pattern:
+- **Simple sync** → call `get_workflow` on the live reference workflow (see
+  Reference Patterns above).
+- **Any branching pattern** (dedupe-skip, dedupe-create-or-update, SKU-
+  reconciliation, parallel-branch) → read the matching local file directly
+  from `references/` — no MCP call needed.
+
+Apply the structure only — never literal field values, credential IDs, or
+app-specific mappings from the reference. If the workflow being built
+combines elements of more than one pattern, or needs a shape not covered by
+any reference (e.g. an approval gate, or the entity-resolution fallback
+cascade — see Reference Patterns), flag this explicitly in Step 9 rather
+than silently assuming a reference covers it or improvising an unconfirmed
+shape.
 
 ### Step 9 — Present Summary and Wait for Confirmation
 Before creating this workflow, present (following the Asking Questions and
 Tone guidance above):
 
 > I'm about to build a workflow in **{org}**: when **{trigger, in source_app}**
-> happens, **{action, in target_app}**, for entity type **{entity_type}**, with
-> these field mappings: {list, marking which are assumptions and which are
-> not cross-checked against documentation}. {If shape is more complex than
-> the reference workflow, say so here.} Shall I go ahead?
+> happens, **{action, in target_app}**, for entity type **{entity_type}**,
+> using the **{structural_pattern}** shape, with these field mappings:
+> {list, marking which are assumptions and which are not cross-checked
+> against documentation}. {If shape is more complex than any single
+> reference, or combines patterns, say so here.} Shall I go ahead?
 
 Wait for explicit confirmation. Do not proceed on an ambiguous or implied yes.
 
@@ -346,31 +417,45 @@ of what an internal tool does or doesn't support (see Tone).
 see Tone.)*
 
 ### arise-mcp — platform read/write
-
+```
 list_organizations
 list_apps
 list_credentials
 list_operations
 get_operation_detail
 list_workflows
-get_workflow → restricted: reference workflow above only, envelope structure only
+get_workflow → restricted: live simple-pattern reference workflow only
 create_workflow
 save_workflow
-
+```
 Note: no tool here exposes the partner's remaining workflow allocation/quota,
 a rename operation, or the node/edge envelope schema directly — see Known
 Limits.
 
 ### Documentation Access — Context7 (read-only, scoped)
-
-resolve-library-id → restricted to resolving "appseconnect/appse-ai-docs" only
-query-docs → restricted to content under:
-- docs/app_integrations/{app}.md
-- docs/platform/key_concepts/expressions_mapping/
-
+```
+resolve-library-id   → restricted to resolving "appseconnect/appse-ai-docs" only
+query-docs           → restricted to content under:
+                          - docs/app_integrations/{app}.md
+                          - docs/platform/key_concepts/expressions_mapping/
+```
 Do not use Context7 to resolve or fetch any other library. This is a
 separate access grant from arise-mcp — do not treat the two as interchangeable
 or use one to justify expanding the other.
+
+### Local Reference Files (read-only, this skill's own folder only)
+```
+references/pattern-dedupe-skip-return-request.json
+references/pattern-dedupe-create-or-update-customer.json
+references/pattern-dedupe-create-or-update-businesspartner-subrecords.json
+references/pattern-sku-reconciliation-and-multibranch-order.json
+references/pattern-parallel-branch-inventory-notification.json
+references/conventions.md
+```
+No MCP or network access needed for these — plain local file reads, scoped
+to this skill's own `references/` folder only. Do not read or infer
+structure from any other file outside this folder or outside the arise-mcp/
+Context7 tools listed above.
 
 ---
 
@@ -383,29 +468,38 @@ conversation.)*
 - Validated end-to-end (build attempted and completed) so far: Shopify
   customer → SAP Business One (cloud) customer; SAP Business One (cloud)
   product → Shopify product (fully built and saved as "Workflow 9",
-  00bc6c98-3dcb-4584-bbeb-6cc2c22829e3). Not yet validated: a workflow shape
-  more complex than one trigger → one action, or a full multi-workflow
-  (Step 0) run through to completion.
+  00bc6c98-3dcb-4584-bbeb-6cc2c22829e3) — both using the simple-pattern
+  reference. **No branching pattern (dedupe-skip, dedupe-create-or-update,
+  SKU-reconciliation, parallel-branch) has been built end-to-end yet** —
+  the reference files are new as of 2026-09-24 and Step 8's selection logic
+  for them is untested in a live run.
+- **Create-or-update is now backed by two independent real examples**
+  (D365 BC → Magento2 customer, and Shopify → SAP B1 business partner) —
+  different app pairs, same confirmed shape. Meaningfully stronger
+  confidence than a single unverified example; the second also revealed the
+  sub-record `RowNum`-preservation detail for updates touching nested array
+  fields (see Reference Patterns).
 - **No rename tool available.** Newly created workflows get a generic
   platform default name (e.g. "Workflow 9"), not the descriptive name the
-  skill intends. Confirmed in the first successful build. Step 11 now
-  phrases this positively and without naming internal tooling; a real fix
-  would need a rename capability added to the platform's tool surface.
+  skill intends. Confirmed in the first successful build. Step 11 phrases
+  this positively and without naming internal tooling; a real fix would need
+  a rename capability added to the platform's tool surface.
 - Field-reference expression syntax is documented and confirmed
   (`{{ $payload.field }}` / `{{ $('nodeName').payload.field }}`) — no longer
   a guess.
-- The node/edge envelope structure for `save_workflow` remains undocumented
-  in appse-ai-docs; still dependent on the single Reference Workflow above.
-  Confirmed working on a second, different scenario (SAP B1 → Shopify
-  product) — the reference's 4-node shape was correctly simplified down to
-  the 2-node shape actually needed.
+- The node/edge envelope structure for the simple pattern remains
+  undocumented in appse-ai-docs; still dependent on the single live
+  reference workflow. The branching patterns now have local, bundled
+  reference files instead (see Reference Patterns) — resolves the portability
+  concern for those shapes, since they no longer depend on any specific
+  org's live data existing.
 - appse-ai-docs field documentation can lag the live API (confirmed: SAP B1
   `CardType`) — always let the live `get_operation_detail` call govern
   required-ness.
 - Context7 tool names confirmed live: `resolve-library-id`, `query-docs`.
 - **`get_operation_detail` can return only shallow/top-level required-field
   info for object- or array-typed parameters**, without their internal
-  shape (confirmed twice now: SAP B1 `Create New Business Partner`, and
+  shape (confirmed twice: SAP B1 `Create New Business Partner`, and
   Shopify's `create_product_options_and_media`). Distinct from documentation
   being unavailable — even with docs working, coverage for a given
   operation's nested shape isn't guaranteed either. Step 6 treats a
@@ -421,30 +515,58 @@ conversation.)*
   values with the platform team.
 - SAP Business One has two distinct catalog entries — `sap_b1` (on-prem,
   DIS API) and `sapbusinessone` (cloud) — confirmed via live testing on two
-  separate runs. When only one has a saved credential, Step 2 now resolves
-  this silently rather than asking (see Asking Questions) — confirmed
-  working correctly on the second product-sync test.
+  separate runs. When only one has a saved credential, Step 2 resolves this
+  silently rather than asking (see Asking Questions).
 - Multi-workflow decomposition (Step 0) has been exercised live — a partner
   explicitly asked to combine two distinct trigger events into one workflow,
   and the skill correctly refused with reasons and proposed the correct
   split instead. Still not yet confirmed: a full run all the way through
-  Step 11 on a multi-workflow set.
+  Step 11 on a multi-workflow set, or the new "plan with alternatives"
+  presentation format (Step 0b, added 2026-09-24) in a live run.
+- **`SplitterNode`'s own configuration mechanism is unclear.** The one
+  confirmed real example has empty `properties` — how it determines what
+  array field to split on is not established. Do not assume a specific
+  config shape for it without further confirmation; if a build needs one,
+  treat this as an open question to raise rather than a solved pattern.
+- **No fallback-cascade entity-resolution example exists** (e.g. email, then
+  phone, then name as successive match attempts). If a build seems to need
+  this, stop and ask rather than improvising a multi-Decision-node chain
+  with no reference.
+- **The AI-node (`get_chat_completions`) reconciliation pattern is real but
+  explicitly not approved for the skill to build from on its own** — see
+  Reference Patterns. Needs a deliberate decision, not silent adoption.
+- **Considered and deferred: a static operation lookup table**
+  (`arise-node-mapping.md`-style file mapping business steps to specific
+  apps/operations, to skip repeated live `list_operations` calls for common
+  steps). Reasonable idea in principle, but deferred — it would introduce
+  its own staleness risk (the same class of problem as the appse-ai-docs
+  lag already found) and is a new maintenance burden, not a one-time file.
+  Revisit only once live testing shows repeated operation lookups are an
+  actual measured speed problem, not before.
+- Performance/fragmentation guidance in Step 0b is currently qualitative
+  only — no real execution-time or node-count data exists yet to set an
+  actual threshold. Revisit once builds with heavier branching have real
+  runs to measure.
 - No arise-mcp tool currently exposes remaining workflow allocation/quota.
 - **Tool-approval prompt volume**: a project-level `settings.json` now
   pre-approves all read-only arise-mcp and Context7 tools; `create_workflow`
   and `save_workflow` still prompt individually as a deliberate second
   safety layer beyond Step 9. Confirmed this cuts the Claude-Code-level
-  approval prompts from ~7 to ~2 per run.
+  approval prompts from ~7 to ~2 per run. Local file reads under
+  `references/` are not yet added to this allowlist — first live run with
+  the new reference files will show whether they prompt too.
 
 ---
 
 ## Output Rules
 
-- Always decompose a multi-event request into separate workflows and confirm
-  the total count with the user before building anything — never build
-  multiple workflows silently one at a time, and hold this line even if the
-  user explicitly asks to combine events; explain why and propose the
-  correct split instead of complying.
+- Always decompose a multi-event request into separate workflows and present
+  a plan (not just a count) before building anything — including which
+  structural pattern each workflow needs, and any genuine alternative
+  decomposition worth considering — and wait for the user to confirm.
+  Never build multiple workflows silently one at a time, and hold the
+  one-event-per-workflow line even if the user explicitly asks to combine
+  events; explain why and propose the correct split instead of complying.
 - Always re-resolve `org_id` every run — never assume the last-used org still
   applies.
 - Use documentation as a first-pass, not final, source for field
@@ -457,11 +579,12 @@ conversation.)*
   object- or array-typed parameter does not count as resolved — treat its
   internal shape as still unknown until confirmed by documentation, the
   user, or a confirmed guess.
-- Never guess field-reference expression syntax — use the documented
-  `{{ $payload... }}` / `{{ $('nodeName')... }}` forms, never invented syntax.
-- Never guess a data-shape, field mapping, or app/operation identity neither
-  source resolves — stop and ask, or get explicit confirmation on a small
-  guessed set.
+- Never guess field-reference expression syntax, or Decision/Filter
+  condition shape — use the documented forms from Documentation Reference
+  and Reference Patterns, never invented syntax or structure.
+- Never guess a data-shape, field mapping, app/operation identity, or
+  structural pattern that no source resolves — stop and ask, or get explicit
+  confirmation on a small guessed set.
 - Never expand tool access mid-run — if the allowed tools aren't enough, stop
   and say so (in plain language, per Tone); don't request ad hoc access in
   the moment.
@@ -474,8 +597,11 @@ conversation.)*
   number them when batched, and don't ask again what's already been
   resolved unambiguously. See Asking Questions.
 - Present a full summary and wait for explicit confirmation before writing
-  anything, and flag explicitly if the requested shape is more complex than
-  the validated reference.
+  anything, and flag explicitly if the requested shape is more complex than,
+  or combines, the available reference patterns.
+- Never build the AI-node reconciliation pattern without explicit user
+  request and confirmation — it is real, working, and documented, but not
+  an approved default.
 - **Never name or reference internal tools, MCP servers, or system
   implementation details in anything partner-facing** — describe
   capabilities and limitations in plain business language instead. See Tone.

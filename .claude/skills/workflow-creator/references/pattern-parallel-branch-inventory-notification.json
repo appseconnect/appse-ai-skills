@@ -1,0 +1,269 @@
+{
+    "nodes": [
+        {
+            "id": "fecc3429-f2fe-4528-8d07-3cbd1ca18260",
+            "data": {
+                "app": {
+                    "code": "dynamics365businesscentral",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/dynamics365bc-icon.svg",
+                    "doc_url": "/app-integrations/dynamics-365-business-central",
+                    "category": [
+                        "ERP"
+                    ],
+                    "has_tools": false,
+                    "description": "Microsoft’s all-in-one ERP system for managing finance, operations, inventory, and sales.",
+                    "has_actions": true,
+                    "display_name": "Dynamics 365 Business Central",
+                    "has_triggers": true
+                },
+                "idx": 1,
+                "cron": "*/3 * * * *",
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": false
+                },
+                "properties": {
+                    "limit": "2",
+                    "since_from": "2026-02-19T10:00:00.000Z"
+                },
+                "action_code": "on_items_updated",
+                "action_name": "Items updated",
+                "current_name": "Dynamics 365 Business Central",
+                "original_name": "Dynamics 365 Business Central",
+                "next_data_from_template": "={{date_max_by($payload[*],&lastModifiedDateTime) }}"
+            },
+            "type": "AppTriggerNode",
+            "dragging": true,
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": -150,
+                "y": -100
+            },
+            "selected": true,
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "a8b94b3f-cd66-4a3f-bbce-1cd0cd664a6b",
+            "data": {
+                "idx": 2,
+                "settings": {
+                    "disable_case_sensitivity": false
+                },
+                "properties": {
+                    "advance_filter": [
+                        [
+                            {
+                                "operator": {
+                                    "type": "basic",
+                                    "operation": "exist"
+                                },
+                                "leftValue": "={{$payload.gtin}}",
+                                "rightValue": ""
+                            }
+                        ]
+                    ]
+                },
+                "current_name": "Decision",
+                "original_name": "Decision"
+            },
+            "type": "DecisionNode",
+            "dragging": true,
+            "measured": {
+                "width": 136,
+                "height": 120
+            },
+            "position": {
+                "x": 225,
+                "y": -50
+            },
+            "selected": false,
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "45f7e503-d49b-40cb-b37f-fa21da074178",
+            "data": {
+                "app": {
+                    "code": "bigcommerce",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/bigcommerce-icon.svg",
+                    "doc_url": "",
+                    "category": [
+                        "Ecommerce"
+                    ],
+                    "has_tools": false,
+                    "description": "A flexible eCommerce platform that helps businesses create, manage, and grow online stores.",
+                    "has_actions": true,
+                    "display_name": "BigCommerce",
+                    "has_triggers": true
+                },
+                "idx": 3,
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": false
+                },
+                "properties": {
+                    "product_id": "={{$payload.gtin}}",
+                    "inventory_level": "={{$payload.inventory}}",
+                    "inventory_tracking": "product"
+                },
+                "action_code": "update_product_inventory",
+                "action_name": "Update product inventory",
+                "current_name": "BigCommerce",
+                "original_name": "BigCommerce"
+            },
+            "type": "AppNode",
+            "dragging": true,
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": 450,
+                "y": -150
+            },
+            "selected": false,
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "9fddeda6-7147-4841-a817-c8fde0896b9c",
+            "data": {
+                "idx": 4,
+                "settings": {
+                    "disable_case_sensitivity": false
+                },
+                "properties": {
+                    "advance_filter": [
+                        [
+                            {
+                                "operator": {
+                                    "type": "basic",
+                                    "operation": "exist"
+                                },
+                                "leftValue": "={{$payload.gtin}}",
+                                "rightValue": ""
+                            },
+                            {
+                                "operator": {
+                                    "type": "number",
+                                    "operation": "equal"
+                                },
+                                "leftValue": "={{$payload.inventory}}",
+                                "rightValue": "0"
+                            }
+                        ]
+                    ]
+                },
+                "current_name": "Decision 1",
+                "original_name": "Decision"
+            },
+            "type": "DecisionNode",
+            "dragging": false,
+            "measured": {
+                "width": 136,
+                "height": 120
+            },
+            "position": {
+                "x": 225,
+                "y": 100
+            },
+            "selected": false,
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "65c6d4cc-2b29-483e-85f0-fedae772bb2a",
+            "data": {
+                "app": {
+                    "code": "microsoftteams",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/microsoft-teams-icon.svg",
+                    "doc_url": "/app-integrations/microsoft-teams/",
+                    "category": [
+                        "Communication"
+                    ],
+                    "has_tools": false,
+                    "description": "A collaboration platform for chatting, calling, meeting, and working together seamlessly across teams and organizations.",
+                    "has_actions": true,
+                    "display_name": "Microsoft Teams",
+                    "has_triggers": false
+                },
+                "idx": 5,
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": false
+                },
+                "properties": {
+                    "body": {
+                        "content": "=<table width=\"100%\" cellpadding=\"10\" cellspacing=\"0\" style=\"background-color:#eef7f0;\">\n<tr>\n<td>\n<p>\n<i>Hey there,</i>\n<br> I just checked the item <span style=\"background-color:#fff3cd; border:1px solid #f0c36d; padding:2px 6px; border-radius:3px; font-weight:bold;\"> {{$payload.number}} </span> and wanted to let you know that there is <span style=\"color:red; font-weight:bold;\">no stock</span> for this item.\n</p>\n<table width=\"100%\" border=\"1\" cellpadding=\"6\" cellspacing=\"0\">\n<tr bgcolor=\"#c8e6c9\">\n<th>\n<b>Item Number</b>\n</th>\n<th>\n<b>Stock</b>\n</th>\n</tr>\n<tr>\n<td>{{$payload.number}}</td>\n<td align=\"center\">0</td>\n</tr>\n</table>\n<p> 🔗 <b>Check live stock updates:</b>\n<a href=\"https://businesscentral.dynamics.com/\">View in Business Central</a>\n</p>\n<p>— <a href=\"https://appse.ai/\">APPSeAI</a>\n</p>\n</td>\n</tr>\n</table>\n ",
+                        "contentType": "html"
+                    },
+                    "chat_id": "=48:notes"
+                },
+                "action_code": "send_message_to_chat",
+                "action_name": "Send message to a chat group",
+                "current_name": "Microsoft Teams",
+                "original_name": "Microsoft Teams"
+            },
+            "type": "AppNode",
+            "dragging": true,
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": 800,
+                "y": 25
+            },
+            "selected": false,
+            "zIndex": "$undefined"
+        }
+    ],
+    "edges": [
+        {
+            "id": "7e0e4c4b-d054-4e73-b2b6-18ea3c9b2093",
+            "source": "fecc3429-f2fe-4528-8d07-3cbd1ca18260",
+            "target": "a8b94b3f-cd66-4a3f-bbce-1cd0cd664a6b",
+            "sourceHandle": "default",
+            "targetHandle": "default"
+        },
+        {
+            "id": "a65a8f68-582e-4823-aee7-6cb663470183",
+            "source": "a8b94b3f-cd66-4a3f-bbce-1cd0cd664a6b",
+            "target": "45f7e503-d49b-40cb-b37f-fa21da074178",
+            "sourceHandle": "true",
+            "targetHandle": "default"
+        },
+        {
+            "id": "e3241767-955c-4d94-a7bc-82dc3bfa8190",
+            "type": "ActionEdge",
+            "source": "fecc3429-f2fe-4528-8d07-3cbd1ca18260",
+            "target": "9fddeda6-7147-4841-a817-c8fde0896b9c",
+            "markerEnd": {
+                "type": "arrowclosed",
+                "color": "#64748b",
+                "width": 22,
+                "height": 22
+            },
+            "sourceHandle": "default",
+            "targetHandle": "default"
+        },
+        {
+            "id": "4736331c-8f1f-49f5-b284-ba700bbb9303",
+            "source": "9fddeda6-7147-4841-a817-c8fde0896b9c",
+            "target": "65c6d4cc-2b29-483e-85f0-fedae772bb2a",
+            "sourceHandle": "true",
+            "targetHandle": "default"
+        }
+    ],
+    "viewport": {
+        "x": 468,
+        "y": 381.5,
+        "zoom": 0.8
+    }
+}

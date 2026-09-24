@@ -1,0 +1,287 @@
+{
+    "nodes": [
+        {
+            "id": "2c768c95-b32c-4e0e-96bc-2f91850b50c6",
+            "data": {
+                "app": {
+                    "code": "shopify",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/shopify-icon.svg",
+                    "doc_url": "/app-integrations/shopify",
+                    "category": [
+                        "Ecommerce"
+                    ],
+                    "has_tools": false,
+                    "has_actions": true,
+                    "display_name": "Shopify",
+                    "has_triggers": true
+                },
+                "idx": 1,
+                "cron": "*/3 * * * *",
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": false
+                },
+                "properties": {
+                    "limit": "10",
+                    "since_from": "2025-12-11T04:10:00.000Z"
+                },
+                "action_code": "on_new_customers_updated",
+                "action_name": "Customers updated",
+                "current_name": "Shopify",
+                "original_name": "Shopify",
+                "next_data_from_template": "={{date_max_by($payload[*],&updatedAt) }}"
+            },
+            "type": "AppTriggerNode",
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": 0,
+                "y": 65
+            },
+            "selected": false,
+            "sourcePosition": "right",
+            "targetPosition": "left",
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "964b98bb-24e7-4606-a2f4-3e01e7b32275",
+            "data": {
+                "app": {
+                    "code": "sapbusinessone",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/sapb1-icon.svg",
+                    "doc_url": "/app-integrations/sap-b1",
+                    "category": [
+                        "ERP"
+                    ],
+                    "has_tools": true,
+                    "has_actions": true,
+                    "display_name": "SAP Business One",
+                    "has_triggers": true
+                },
+                "idx": 2,
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": true
+                },
+                "properties": {
+                    "EmailAddress": "={{$payload.defaultEmailAddress.emailAddress}}"
+                },
+                "action_code": "get_businesspartner_by_email",
+                "action_name": "Get a BusinessPartner by EmailAddress",
+                "current_name": "SAP Business One",
+                "original_name": "SAP Business One"
+            },
+            "type": "AppNode",
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": 370,
+                "y": 65
+            },
+            "selected": false,
+            "sourcePosition": "right",
+            "targetPosition": "left",
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "8192e43a-6d6e-4f97-bc21-4e6d086a3c70",
+            "data": {
+                "idx": 3,
+                "settings": {
+                    "disable_case_sensitivity": false
+                },
+                "properties": {
+                    "advance_filter": [
+                        [
+                            {
+                                "operator": {
+                                    "type": "string",
+                                    "operation": "equal"
+                                },
+                                "leftValue": "={{$payload.EmailAddress}}",
+                                "rightValue": "={{$('Shopify').payload.defaultEmailAddress.emailAddress}}"
+                            }
+                        ]
+                    ]
+                },
+                "current_name": "Decision",
+                "original_name": "Decision"
+            },
+            "type": "DecisionNode",
+            "measured": {
+                "width": 136,
+                "height": 120
+            },
+            "position": {
+                "x": 740,
+                "y": 65
+            },
+            "selected": false,
+            "sourcePosition": "right",
+            "targetPosition": "left",
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "c8704890-ae44-4836-a084-4b2340201759",
+            "data": {
+                "app": {
+                    "code": "sapbusinessone",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/sapb1-icon.svg",
+                    "doc_url": "/app-integrations/sap-b1",
+                    "category": [
+                        "ERP"
+                    ],
+                    "has_tools": true,
+                    "has_actions": true,
+                    "display_name": "SAP Business One",
+                    "has_triggers": true
+                },
+                "idx": 5,
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": false
+                },
+                "properties": {
+                    "Phone1": "={{$('Shopify').payload.defaultPhoneNumber.phoneNumber}}",
+                    "CardCode": "={{split($('Shopify').payload.id, '/')[4]}}",
+                    "CardName": "={{$('Shopify').payload.firstName}} {{$('Shopify').payload.lastName}}",
+                    "BPAddresses": [
+                        {
+                            "City": "={{$('Shopify').payload.addresses[].city}}",
+                            "State": "={{$('Shopify').payload.addresses[].provinceCode}}",
+                            "Street": "={{$('Shopify').payload.addresses[].address1}}",
+                            "Country": "={{$('Shopify').payload.addresses[].countryCodeV2}}",
+                            "ZipCode": "={{$('Shopify').payload.addresses[].zip}}",
+                            "AddressName": "={{$('Shopify').payload.addresses[].name}}",
+                            "AddressType": "bo_ShipTo"
+                        }
+                    ],
+                    "EmailAddress": "={{$('Shopify').payload.defaultEmailAddress.emailAddress}}"
+                },
+                "action_code": "create_businesspartner",
+                "action_name": "Create a new businesspartner",
+                "current_name": "SAP Business One 1",
+                "original_name": "SAP Business One"
+            },
+            "type": "AppNode",
+            "dragging": false,
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": 1110,
+                "y": 130
+            },
+            "selected": false,
+            "sourcePosition": "right",
+            "targetPosition": "left",
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "ddfc3ffe-6efd-4dbc-9f64-91f677fc7a46",
+            "data": {
+                "app": {
+                    "code": "sapbusinessone",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/sapb1-icon.svg",
+                    "doc_url": "/app-integrations/sap-b1",
+                    "category": [
+                        "ERP"
+                    ],
+                    "has_tools": true,
+                    "has_actions": true,
+                    "display_name": "SAP Business One",
+                    "has_triggers": true
+                },
+                "idx": 4,
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": true
+                },
+                "properties": {
+                    "Phone1": "={{$('Shopify').payload.defaultPhoneNumber.phoneNumber}}",
+                    "CardCode": "={{$payload.CardCode}}",
+                    "CardName": "={{$('Shopify').payload.firstName}}{{$('Shopify').payload.lastName}}",
+                    "BPAddresses": [
+                        {
+                            "City": "={{$('Shopify').payload.addresses[].city}}",
+                            "State": "={{$('Shopify').payload.addresses[].provinceCode}}",
+                            "BPCode": "={{$payload.CardCode}}",
+                            "RowNum": "={{$payload.BPAddresses[idx].RowNum}}",
+                            "Street": "={{$('Shopify').payload.addresses[].address1}}",
+                            "Country": "={{$('Shopify').payload.addresses[].countryCodeV2}}",
+                            "ZipCode": "={{$('Shopify').payload.addresses[].zip}}",
+                            "AddressName": "={{$('Shopify').payload.addresses[].name}}",
+                            "AddressType": "bo_ShipTo"
+                        }
+                    ]
+                },
+                "action_code": "update_businesspartner",
+                "action_name": "Update a businesspartner",
+                "current_name": "SAP Business One 2",
+                "original_name": "SAP Business One"
+            },
+            "type": "AppNode",
+            "dragging": false,
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": 1110,
+                "y": 0
+            },
+            "selected": false,
+            "sourcePosition": "right",
+            "targetPosition": "left",
+            "zIndex": "$undefined"
+        }
+    ],
+    "edges": [
+        {
+            "id": "554ec1d8-237e-4dfa-a1c9-03b6605959ab",
+            "source": "2c768c95-b32c-4e0e-96bc-2f91850b50c6",
+            "target": "964b98bb-24e7-4606-a2f4-3e01e7b32275",
+            "sourceHandle": "default",
+            "targetHandle": "default"
+        },
+        {
+            "id": "d048edab-c588-4b8d-b973-4a00f3dfab02",
+            "source": "964b98bb-24e7-4606-a2f4-3e01e7b32275",
+            "target": "8192e43a-6d6e-4f97-bc21-4e6d086a3c70",
+            "sourceHandle": "default",
+            "targetHandle": "default"
+        },
+        {
+            "id": "caab7dd7-4c7d-40f8-8f96-b3785fb8ff8b",
+            "source": "8192e43a-6d6e-4f97-bc21-4e6d086a3c70",
+            "target": "c8704890-ae44-4836-a084-4b2340201759",
+            "sourceHandle": "false",
+            "targetHandle": "default"
+        },
+        {
+            "id": "4dec1c6c-ae5b-4771-ac66-8935c91f77a5",
+            "source": "8192e43a-6d6e-4f97-bc21-4e6d086a3c70",
+            "target": "ddfc3ffe-6efd-4dbc-9f64-91f677fc7a46",
+            "sourceHandle": "true",
+            "targetHandle": "default"
+        }
+    ],
+    "viewport": {
+        "x": 180,
+        "y": 309.5,
+        "zoom": 0.8
+    }
+}

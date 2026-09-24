@@ -1,0 +1,338 @@
+{
+    "nodes": [
+        {
+            "id": "2f72799b-0e09-4c94-8f8e-6c27b2114ddc",
+            "data": {
+                "app": {
+                    "code": "woocommerce",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/woocommerce-icon.svg",
+                    "doc_url": "/app-integrations/woocommerce",
+                    "category": [
+                        "Ecommerce"
+                    ],
+                    "has_tools": false,
+                    "description": "A WordPress-based eCommerce plugin that lets businesses sell products and manage online stores with full flexibility.",
+                    "has_actions": true,
+                    "display_name": "WooCommerce",
+                    "has_triggers": true
+                },
+                "idx": 1,
+                "cron": "*/3 * * * *",
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": false
+                },
+                "properties": {
+                    "limit": "10",
+                    "status": "cancelled",
+                    "since_from": "2026-03-25T05:34:00.000Z"
+                },
+                "action_code": "on_orders_updated",
+                "action_name": "Orders updated",
+                "current_name": "WooCommerce",
+                "original_name": "WooCommerce",
+                "next_data_from_template": "={{date_max_by($payload[*],&date_modified) }}"
+            },
+            "type": "AppTriggerNode",
+            "dragging": true,
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": -150,
+                "y": -50
+            },
+            "selected": false,
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "f3a0cf34-a1f8-40a2-ba3e-7315910fdb58",
+            "data": {
+                "app": {
+                    "code": "sapbusinessone",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/sapb1-icon.svg",
+                    "doc_url": "/app-integrations/sap-b1",
+                    "category": [
+                        "ERP"
+                    ],
+                    "has_tools": true,
+                    "description": "An ERP system for small and midsize businesses to manage accounting, inventory, sales, and operations.",
+                    "has_actions": true,
+                    "display_name": "SAP Business One",
+                    "has_triggers": true
+                },
+                "idx": 2,
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": true
+                },
+                "properties": {
+                    "$top": "10",
+                    "$filter": "=U_WEBORDID eq '{{$payload.id}}' and NumAtCard eq 'U_{{$payload.id}}'",
+                    "objectName": "DeliveryNotes"
+                },
+                "action_code": "get_filtered_records",
+                "action_name": "Search Records",
+                "current_name": "SAP Business One",
+                "original_name": "SAP Business One"
+            },
+            "type": "AppNode",
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": 240,
+                "y": -50
+            },
+            "selected": false,
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "725c0441-d797-482d-8235-9f1044a7dcf3",
+            "data": {
+                "idx": 3,
+                "settings": {
+                    "disable_case_sensitivity": false
+                },
+                "properties": {
+                    "advance_filter": [
+                        [
+                            {
+                                "operator": {
+                                    "type": "basic",
+                                    "operation": "exist"
+                                },
+                                "leftValue": "={{$payload.DocEntry}}",
+                                "rightValue": ""
+                            },
+                            {
+                                "operator": {
+                                    "type": "string",
+                                    "operation": "equal"
+                                },
+                                "leftValue": "={{$payload.DocumentStatus}}",
+                                "rightValue": "bost_Open"
+                            }
+                        ]
+                    ]
+                },
+                "current_name": "Filter",
+                "original_name": "Filter"
+            },
+            "type": "FilterNode",
+            "measured": {
+                "width": 136,
+                "height": 120
+            },
+            "position": {
+                "x": 630,
+                "y": -50
+            },
+            "selected": false,
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "409fa0c1-e63b-4cc6-af18-0ebc02a5f76c",
+            "data": {
+                "app": {
+                    "code": "sapbusinessone",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/sapb1-icon.svg",
+                    "doc_url": "/app-integrations/sap-b1",
+                    "category": [
+                        "ERP"
+                    ],
+                    "has_tools": true,
+                    "description": "An ERP system for small and midsize businesses to manage accounting, inventory, sales, and operations.",
+                    "has_actions": true,
+                    "display_name": "SAP Business One",
+                    "has_triggers": true
+                },
+                "idx": 6,
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": false
+                },
+                "properties": {
+                    "DocDate": "={{$('SAP Business One').payload.DocDate}}",
+                    "CardCode": "={{$('SAP Business One').payload.CardCode}}",
+                    "NumAtCard": "={{$('SAP Business One').payload.NumAtCard}}",
+                    "DocDueDate": "={{$('SAP Business One').payload.DocDueDate}}",
+                    "DocumentLines": [
+                        {
+                            "TaxCode": "={{$('SAP Business One').payload.DocumentLines[].TaxCode}}",
+                            "BaseLine": "={{$('SAP Business One').payload.DocumentLines[].BaseLine}}",
+                            "BaseType": "15",
+                            "ItemCode": "={{$('SAP Business One').payload.DocumentLines[].ItemCode}}",
+                            "Quantity": "={{$('SAP Business One').payload.DocumentLines[].Quantity}}",
+                            "BaseEntry": "={{$('SAP Business One').payload.DocEntry}}",
+                            "UnitPrice": "={{$('SAP Business One').payload.DocumentLines[].Price}}"
+                        }
+                    ]
+                },
+                "action_code": "create_return_request",
+                "action_name": "Create Return Request",
+                "current_name": "SAP Business One 1",
+                "original_name": "SAP Business One"
+            },
+            "type": "AppNode",
+            "dragging": true,
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": 1700,
+                "y": 0
+            },
+            "selected": false,
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "4ff138b1-6cf3-4ec2-bafc-7304d11f71af",
+            "data": {
+                "app": {
+                    "code": "sapbusinessone",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/sapb1-icon.svg",
+                    "doc_url": "/app-integrations/sap-b1",
+                    "category": [
+                        "ERP"
+                    ],
+                    "has_tools": true,
+                    "description": "An ERP system for small and midsize businesses to manage accounting, inventory, sales, and operations.",
+                    "has_actions": true,
+                    "display_name": "SAP Business One",
+                    "has_triggers": true
+                },
+                "idx": 4,
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": true
+                },
+                "properties": {
+                    "$top": "10",
+                    "$filter": "=U_WEBORDID eq '{{$('WooCommerce').payload.id}}' and NumAtCard eq 'U_{{$('WooCommerce').payload.id}}'",
+                    "objectName": "ReturnRequest"
+                },
+                "action_code": "get_filtered_records",
+                "action_name": "Search Records",
+                "current_name": "SAP Business One 2",
+                "original_name": "SAP Business One"
+            },
+            "type": "AppNode",
+            "dragging": true,
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": 900,
+                "y": -50
+            },
+            "selected": false,
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "611e486b-2789-4deb-be74-31afd6546b08",
+            "data": {
+                "idx": 5,
+                "settings": {
+                    "disable_case_sensitivity": false
+                },
+                "properties": {
+                    "advance_filter": [
+                        [
+                            {
+                                "operator": {
+                                    "type": "basic",
+                                    "operation": "exist"
+                                },
+                                "leftValue": "={{$payload.DocEntry}}",
+                                "rightValue": ""
+                            }
+                        ]
+                    ]
+                },
+                "current_name": "Decision",
+                "original_name": "Decision"
+            },
+            "type": "DecisionNode",
+            "dragging": false,
+            "measured": {
+                "width": 136,
+                "height": 120
+            },
+            "position": {
+                "x": 1325,
+                "y": -50
+            },
+            "selected": false,
+            "zIndex": "$undefined"
+        }
+    ],
+    "edges": [
+        {
+            "id": "7ca5b359-333a-46b1-bd0b-cfc3b050cc42",
+            "source": "2f72799b-0e09-4c94-8f8e-6c27b2114ddc",
+            "target": "f3a0cf34-a1f8-40a2-ba3e-7315910fdb58",
+            "sourceHandle": "default",
+            "targetHandle": "default"
+        },
+        {
+            "id": "b8000edb-6b90-4ace-ab82-2f398d46bc54",
+            "source": "f3a0cf34-a1f8-40a2-ba3e-7315910fdb58",
+            "target": "725c0441-d797-482d-8235-9f1044a7dcf3",
+            "sourceHandle": "default",
+            "targetHandle": "default"
+        },
+        {
+            "id": "40d8e0d0-f88a-4d12-a54b-4b2676062a25",
+            "source": "725c0441-d797-482d-8235-9f1044a7dcf3",
+            "target": "4ff138b1-6cf3-4ec2-bafc-7304d11f71af",
+            "sourceHandle": "default",
+            "targetHandle": "default"
+        },
+        {
+            "id": "6c227c7b-86be-4b4c-9c88-5cdc10be2021",
+            "type": "ActionEdge",
+            "source": "4ff138b1-6cf3-4ec2-bafc-7304d11f71af",
+            "target": "611e486b-2789-4deb-be74-31afd6546b08",
+            "markerEnd": {
+                "type": "arrowclosed",
+                "color": "#64748b",
+                "width": 22,
+                "height": 22
+            },
+            "sourceHandle": "default",
+            "targetHandle": "default"
+        },
+        {
+            "id": "ad351ecc-9b7c-4567-8590-52589988e2a1",
+            "type": "ActionEdge",
+            "source": "611e486b-2789-4deb-be74-31afd6546b08",
+            "target": "409fa0c1-e63b-4cc6-af18-0ebc02a5f76c",
+            "markerEnd": {
+                "type": "arrowclosed",
+                "color": "#64748b",
+                "width": 22,
+                "height": 22
+            },
+            "sourceHandle": "false",
+            "targetHandle": "default"
+        }
+    ],
+    "viewport": {
+        "x": 245.52153110047846,
+        "y": 390.944976076555,
+        "zoom": 0.5301435406698565
+    }
+}
