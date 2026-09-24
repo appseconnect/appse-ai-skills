@@ -209,6 +209,16 @@ Joining values needs no function — two expressions side by side in one
 field concatenate (e.g. `{{...firstName}} {{...lastName}}`, confirmed in
 the live reference workflow and in the portal).
 
+**Nested required fields the live operation detail doesn't show:**
+| Operation | Array / object | Sub-fields the portal requires | How references fill them |
+|---|---|---|---|
+| SAP B1 `create_item` | `ItemPrices[]` | `PriceList`, `Price`, `Currency` | `PriceList: "1"`, `Price` from the source price, `Currency: "$$"` (SKU reference) |
+| D365 BC `create_salesorder` | `salesOrderLines[]` | `lineType`, `quantity`, `unitPrice`, `lineObjectNumber` | `lineType: "Item"`, others from the order lines (find-or-create reference) |
+
+Add rows as new ones are found. For `Currency`, prefer a real source value
+(e.g. the price's currency code in the source payload) and fall back to the
+target's local-currency code only as a disclosed default.
+
 **Common mandatory-field patterns (approach, not literal values):**
 - **Target record number/code required, source has a GID** → derive the
   numeric ID with `substringAfter` (or `split(...,'/')[4]`).

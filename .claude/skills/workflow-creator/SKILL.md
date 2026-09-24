@@ -524,6 +524,15 @@ actually required live.
   rather than treating the top-level type alone as enough information to
   map against. (This is about an unknown *shape*; once the shape is known,
   filling its mandatory fields follows the ladder below.)
+- **Nested fields count too.** The live operation detail often lists an
+  array or object (e.g. SAP `ItemPrices`, Business Central
+  `salesOrderLines`) with **no inner schema, even marked optional** — while
+  the portal form requires fields inside each element (e.g. `PriceList`,
+  `Price`, **`Currency`**). So: the moment you include an array element or
+  object, treat **every sub-field** that the docs or a reference workflow
+  show for it as mandatory, and fill each one via the ladder below. Never
+  include an element with any sub-field left blank — either fill it
+  completely or leave the whole element out (and say so in Step 9).
 - **Every mandatory target field must get a value — never leave one empty
   or send `""`.** An empty mandatory field is a broken workflow, not a
   cautious one. Work through this ladder, in order, and use the first rung
@@ -653,7 +662,10 @@ and other non-app nodes don't take one.) The trigger is the easiest to miss
 
 **Then verify:** call `get_workflow` on the workflow just saved and check
 that every `AppTriggerNode`/`AppNode` has a `credential_id` matching Step 2,
-that no mandatory field (per Step 6) is missing or `""`, **that every
+that **no property anywhere in any node is `""` or missing a value —
+check recursively, including every field inside arrays and objects** (a
+blank `Currency` inside `ItemPrices` counts; fill it via the Step 6 ladder
+or ask, never save it blank), **that every
 mapping reads from the node that actually passes the record to it (not the
 trigger, when a Filter or Decision sits in between), and that the
 safeguards from your expert review (listed in Step 9) actually made it into
@@ -878,10 +890,13 @@ conversation.)*
 - Never guess field-reference expression syntax, or Decision/Filter
   condition shape — use the documented forms from Documentation Reference
   and Reference Patterns, never invented syntax or structure.
-- Never leave a mandatory field empty or send `""`. Fill it using the Step 6
-  ladder (direct field → expression function → reference-pattern approach →
-  sensible constant), list every proposed mapping with its reason in Steps 9
-  and 11, and only ask when no rung gives a plausible value.
+- Never leave a mandatory field empty or send `""` — **including fields
+  nested inside arrays and objects**, which the live operation detail often
+  doesn't list. Fill it using the Step 6 ladder (direct field → expression
+  function → reference-pattern approach → sensible constant), list every
+  proposed mapping with its reason in Steps 9 and 11, and only ask when no
+  rung gives a plausible value. Never save a workflow with a blank value
+  anywhere in it.
 - Never silently invent a data-shape, app/operation identity, or structural
   pattern that no source resolves — stop and ask, or get explicit
   confirmation. (Proposed field mappings are different: make them, and
