@@ -279,6 +279,7 @@ a function name.
 | `substringAfter(text, marker)`  | Text after a marker — e.g. strip a Shopify GID to its numeric ID                                    | `substringAfter($('Shopify').payload.customer.id,'gid://shopify/Customer/')` |
 | `substringBefore(text, marker)` | Text before a marker — e.g. date part of an ISO timestamp                                           | `substringBefore($('Shopify').payload.createdAt,'T')`                        |
 | `split(text, sep)[n]`           | Split and take the nth part — e.g. first/last name from a display name, or the ID segment of a GID  | `split($payload.id,'/')[4]`, `split(...displayName,' ')[0]`                  |
+| `to_number(value)`              | Convert text to a number — **required for numeric target fields** (prices, quantities, price-list numbers) when the source sends text; documented in appse-ai-docs `expressions_mapping` | `to_number($('Has SKU').payload.price)`, `to_number('1')` |
 | `date_max_by(array, &field)`    | Latest date in an array — trigger watermark only (`next_data_from_template`), not for field mapping | `date_max_by($payload[*],&updatedAt)`                                        |
 
 Joining values needs no function — two expressions side by side in one
@@ -288,7 +289,7 @@ the live reference workflow and in the portal).
 **Nested required fields the live operation detail doesn't show:**
 | Operation | Array / object | Sub-fields the portal requires | How to fill them |
 |---|---|---|---|
-| SAP B1 `create_item` | `ItemPrices[]` | `PriceList`, `Price`, `Currency` | `Price` from the source price. **`PriceList` and `Currency` are company-specific — ask the partner** (no SAP B1 action returns local currency or price lists; checked 2026-09-24). The SKU reference's `"1"` / `"$$"` were that customer's values — never copy them. |
+| SAP B1 `create_item` | `ItemPrices[]` | `PriceList`, `Price`, `Currency` | `Price` from the source price. **`PriceList` and `Currency` are company-specific — ask the partner** (no SAP B1 action returns local currency or price lists; checked 2026-09-24). The SKU reference's `"1"` / `"$$"` were that customer's values — never copy them. **Types (from the documented SAP B1 "Items Updated" record):** `PriceList` integer, `Price` number, `Currency` a currency *code* as defined in SAP (the example uses `"$"`) — send numbers via `to_number()`. Sending `"1"` / `"100.00"` / `"USD"` failed with "BadRequest request body data is invalid" (Workflow 18). |
 | D365 BC `create_salesorder` | `salesOrderLines[]` | `lineType`, `quantity`, `unitPrice`, `lineObjectNumber` | `lineType: "Item"` (standard), others from the order lines (find-or-create reference) |
 
 Add rows as new ones are found. Anything company-specific (currency, price

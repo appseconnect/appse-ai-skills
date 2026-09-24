@@ -374,6 +374,23 @@ those mappings "not cross-checked against documentation".
 
   Rungs 2–4 are **proposed mappings**: fine to use, but list each in Step 9
   and Step 11 with a one-line reason.
+- **Check the target's expected type and format for every field yourself —
+  before building, not after an error.** Valid JSON isn't enough; the
+  target's API schema decides. Sources, in order: the live operation detail
+  (top-level types); then a **real record of the same entity from the
+  target** in the docs — the app's trigger or get-action example results
+  (e.g. SAP B1 "Items Updated" shows `ItemPrices: [{"PriceList": 1,
+  "Price": 70, "Currency": "$"}]`: numbers, and the real currency code);
+  then a run's node output if payload access is enabled. Match your mapping
+  to that exact type and code format.
+- **Send each value as the type the target expects.** Numeric fields
+  (prices, quantities, price-list numbers, IDs typed as numbers) must go out
+  as numbers, not text — source apps like Shopify return prices as text
+  (`"100.00"`). Wrap them with the documented `to_number()`, e.g.
+  `{{to_number($('Has SKU').payload.price)}}`, and give numeric constants as
+  `{{to_number('1')}}`. A type mismatch makes the target reject the whole
+  record with a generic error (SAP B1: "BadRequest request body data is
+  invalid" — Workflow 18, 2026-09-24).
 - **Company-specific settings** (currency, price list, warehouse, item
   group, tax/VAT code, posting group, number series, company, sales channel)
   are **never** copied from a reference or guessed: source field → a lookup
