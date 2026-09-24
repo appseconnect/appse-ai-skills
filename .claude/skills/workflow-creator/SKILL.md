@@ -26,21 +26,40 @@ many get created is a real cost decision, not just a technical one. See Step 0.
 
 ## Tone
 
-Everything this skill says to the partner should be confident and encouraging,
-not hedging or self-doubting. There's a difference between two things that can
-look similar but aren't:
+Everything this skill says to the partner should be confident and
+encouraging, not hedging or self-doubting, and should never expose internal
+implementation details. Two separate rules apply together:
 
+**1. State decision-relevant facts plainly, without hedging.** There's a
+difference between two things that can look similar but aren't:
 - **Decision-relevant facts** the partner needs in order to choose something
   (e.g. "this will use 2 workflows from your allocation," "this mapping
-  wasn't cross-checked against docs") — always state these, plainly and
-  matter-of-factly. These are the partner's information to have.
+  wasn't cross-checked against documentation") — always state these,
+  plainly and matter-of-factly. These are the partner's information to have.
 - **Meta-commentary about what the skill itself can't do** ("I can't check
-  remaining balance," "I'm not able to confirm...") — cut this framing. State
-  the underlying fact directly instead (see the Step 0 example below) rather
-  than narrating the skill's own limitations at the partner.
+  remaining balance," "I'm not able to confirm...") — cut this framing.
+  State the underlying fact directly instead.
+
+**2. Never name or reference internal tools or systems in partner-facing
+text.** This includes `arise-mcp`, `Context7`, "the skill," "the reference
+workflow," specific MCP tool names (`save_workflow`, `get_operation_detail`,
+etc.), or any other internal implementation detail. A partner doesn't need
+to know this machinery exists — describe capabilities and limitations in
+plain business language instead. For example:
+- Wrong: *"arise-mcp doesn't expose a rename tool, so I couldn't set the
+  name directly."*
+- Right: *"This workflow is currently named 'Workflow 9' — rename it to
+  something clearer next time you're in the appse ai UI."*
+
+This applies everywhere partner-facing text is generated — Step 9's summary,
+Step 11's report, and any clarifying question — not just one example. (The
+Known Limits and Allowed Tools sections of this file are internal
+documentation for whoever maintains this skill, not partner-facing, and are
+unaffected by this rule.)
 
 The goal is a partner coming away feeling like they have a capable teammate,
-not like they're being warned away from using it.
+not like they're being warned away from using it, and never feeling like
+they're reading a systems log.
 
 ---
 
@@ -69,6 +88,11 @@ earlier step's result.
   explicitly which question(s) were answered and which are still open —
   don't just re-list everything as if nothing was received; that reads as
   ignoring the partner's answer, not as asking a new question.
+- **Don't ask again what's genuinely unambiguous.** If a request already
+  specifies something clearly and only one real option exists once
+  connections are checked (e.g. only one of two app-catalog variants has a
+  saved credential), state the resolution and move on rather than asking —
+  reserve questions for genuine, live decisions.
 
 ---
 
@@ -95,8 +119,9 @@ example shape, not as the final word on what's mandatory.
 **If Context7 is unavailable or a lookup fails:** do not stall or retry
 repeatedly. Fall back to `get_operation_detail` alone (which already governs
 on conflict), and in the Step 9 summary, mark every affected field mapping as
-**"not cross-checked against docs"** rather than presenting it with the same
-confidence as a docs-confirmed one.
+**"not cross-checked against documentation"** (plain language, per Tone —
+not "not cross-checked against Context7") rather than presenting it with the
+same confidence as a docs-confirmed one.
 
 ---
 
@@ -167,8 +192,8 @@ business event, or several?
 - Never create multiple workflows one at a time without having shown this
   total count up front.
 - This skill cannot currently check remaining allocation balance — no
-  arise-mcp tool exposes it. State the count being requested plainly (per
-  Tone above — no hedging about what the skill can't check). Do not claim to
+  internal tool exposes it. State the count being requested plainly (per
+  Tone above — no hedging, and no naming of internal tools). Do not claim to
   know whether the partner has that many remaining.
 
 Repeat Steps 1–11 below for each workflow in the confirmed set.
@@ -182,6 +207,12 @@ Call `list_apps`, then `list_credentials`. Confirm both `source_app` and
 `target_app` have an actual **saved credential** — a catalog entry with no
 credential at all is not enough, and this still stops the run. If either has
 no credential saved, stop and report exactly which one.
+
+If an app name matches more than one catalog entry (e.g. a cloud vs. on-prem
+variant), and only one of them has a saved credential, state which one will
+be used and proceed — this is a resolved fact, not an open question, and
+does not need to stop and ask (see Asking Questions). Only stop and ask if
+more than one matching variant genuinely has a usable credential.
 
 **Temporary override (added 2026-09-24, revisit once resolved):** do not
 block on the `isValidated` flag. Its real meaning is currently unconfirmed —
@@ -211,7 +242,8 @@ This same "don't guess the right identity, ask" principle applies to
 app-level ambiguity too, not just operation-level — e.g. if an app name
 matches more than one catalog entry (such as SAP Business One having both a
 cloud and an on-prem/DIS variant), stop and confirm which one is meant before
-proceeding, even though this isn't a trigger/action operation choice.
+proceeding — unless Step 2 already resolved it because only one had a usable
+credential, in which case do not ask again.
 
 ### Step 5 — Check Operation Stage
 Both `release` and `preview` stage operations are acceptable to use, with no
@@ -235,8 +267,8 @@ actually required live.
 - **If docs and the live call disagree, the live call governs** what's
   treated as required (see the known SAP B1 `CardType` discrepancy above).
   Use docs for field naming/shape, not as the final word on what's mandatory.
-- If Context7 is unavailable or the lookup fails, follow the fallback in the
-  Documentation Reference section above — do not stall.
+- If documentation lookup is unavailable or the lookup fails, follow the
+  fallback in the Documentation Reference section above — do not stall.
 - **If `get_operation_detail` only returns shallow/top-level required fields**
   for an object- or array-typed parameter (e.g. it says a `product` object or
   a `media` array is required, but not what's inside them), that is not
@@ -274,14 +306,14 @@ than the reference (multiple actions, branching, approval gate), flag this
 explicitly in Step 9 rather than silently assuming the reference covers it.
 
 ### Step 9 — Present Summary and Wait for Confirmation
-Before creating this workflow, present (following the Asking Questions
-guidance above if any part of this still needs the partner's input):
+Before creating this workflow, present (following the Asking Questions and
+Tone guidance above):
 
 > I'm about to build a workflow in **{org}**: when **{trigger, in source_app}**
 > happens, **{action, in target_app}**, for entity type **{entity_type}**, with
 > these field mappings: {list, marking which are assumptions and which are
-> not cross-checked against docs}. {If shape is more complex than the
-> reference workflow, say so here.} Shall I go ahead?
+> not cross-checked against documentation}. {If shape is more complex than
+> the reference workflow, say so here.} Shall I go ahead?
 
 Wait for explicit confirmation. Do not proceed on an ambiguous or implied yes.
 
@@ -291,17 +323,27 @@ learned in Step 8, the field mappings from Steps 6–7, and this workflow's own
 trigger and action.
 
 ### Step 11 — Report Back Plainly
-State: workflow name and ID, exact trigger and action used, every field mapping
-applied, and which mappings were assumptions, unconfirmed, or docs-confirmed.
-This is what the user checks against the appse ai UI once it's reachable —
-the build itself is safely persisted to the database regardless of UI
-availability, so a UI outage delays verification, not the build's validity.
-If this was one of several workflows from Step 0, also report progress
-against the full set (e.g. "2 of 4 built so far").
+State: workflow name and ID, exact trigger and action used, every field
+mapping applied, and which mappings were assumptions, unconfirmed, or
+documentation-confirmed. This is what the user checks against the appse ai
+UI once it's reachable — the build itself is safely persisted regardless of
+UI availability, so a UI outage delays verification, not the build's
+validity (state this plainly, without naming the database or any internal
+system). If this was one of several workflows from Step 0, also report
+progress against the full set (e.g. "2 of 4 built so far").
+
+If the platform assigns a generic default name (e.g. "Workflow 9") rather
+than the descriptive name intended, state this plainly and positively —
+e.g. "This workflow is currently named 'Workflow 9' — rename it to something
+clearer next time you're in the appse ai UI" — never explain this in terms
+of what an internal tool does or doesn't support (see Tone).
 
 ---
 
 ## Allowed Tools
+
+*(Internal reference for whoever maintains this skill — not partner-facing;
+see Tone.)*
 
 ### arise-mcp — platform read/write
 
@@ -315,6 +357,9 @@ get_workflow → restricted: reference workflow above only, envelope structure o
 create_workflow
 save_workflow
 
+Note: no tool here exposes the partner's remaining workflow allocation/quota,
+a rename operation, or the node/edge envelope schema directly — see Known
+Limits.
 
 ### Documentation Access — Context7 (read-only, scoped)
 
@@ -327,56 +372,69 @@ Do not use Context7 to resolve or fetch any other library. This is a
 separate access grant from arise-mcp — do not treat the two as interchangeable
 or use one to justify expanding the other.
 
-Note: no tool here exposes the partner's remaining workflow allocation/quota,
-and no tool exposes the node/edge envelope schema directly — see Known Limits.
-
 ---
 
 ## Known Limits (update as testing reveals more)
 
-- Validated end-to-end (build attempted, credentials present) so far:
-  Shopify customer → SAP Business One (cloud) customer; SAP Business One
-  (cloud) product → Shopify product (in progress, currently paused on the
-  create_product vs. create_product_options_and_media decision). Not yet
-  validated: a workflow shape more complex than one trigger → one action.
+*(Internal reference — not partner-facing; see Tone for how these
+limitations should instead be phrased if they ever surface in a partner
+conversation.)*
+
+- Validated end-to-end (build attempted and completed) so far: Shopify
+  customer → SAP Business One (cloud) customer; SAP Business One (cloud)
+  product → Shopify product (fully built and saved as "Workflow 9",
+  00bc6c98-3dcb-4584-bbeb-6cc2c22829e3). Not yet validated: a workflow shape
+  more complex than one trigger → one action, or a full multi-workflow
+  (Step 0) run through to completion.
+- **No rename tool available.** Newly created workflows get a generic
+  platform default name (e.g. "Workflow 9"), not the descriptive name the
+  skill intends. Confirmed in the first successful build. Step 11 now
+  phrases this positively and without naming internal tooling; a real fix
+  would need a rename capability added to the platform's tool surface.
 - Field-reference expression syntax is documented and confirmed
   (`{{ $payload.field }}` / `{{ $('nodeName').payload.field }}`) — no longer
   a guess.
 - The node/edge envelope structure for `save_workflow` remains undocumented
   in appse-ai-docs; still dependent on the single Reference Workflow above.
+  Confirmed working on a second, different scenario (SAP B1 → Shopify
+  product) — the reference's 4-node shape was correctly simplified down to
+  the 2-node shape actually needed.
 - appse-ai-docs field documentation can lag the live API (confirmed: SAP B1
   `CardType`) — always let the live `get_operation_detail` call govern
   required-ness.
 - Context7 tool names confirmed live: `resolve-library-id`, `query-docs`.
 - **`get_operation_detail` can return only shallow/top-level required-field
   info for object- or array-typed parameters**, without their internal
-  shape (confirmed: Shopify's `create_product_options_and_media` reports
-  `product` and `media` as required, but not what's inside either). This is
-  a distinct gap from Context7 being unavailable — even with Context7
-  working, its docs coverage for a given operation's nested shape isn't
-  guaranteed either. Step 6 now treats a shallow-only result as still
-  unresolved, not sufficient to proceed.
+  shape (confirmed twice now: SAP B1 `Create New Business Partner`, and
+  Shopify's `create_product_options_and_media`). Distinct from documentation
+  being unavailable — even with docs working, coverage for a given
+  operation's nested shape isn't guaranteed either. Step 6 treats a
+  shallow-only result as still unresolved.
 - **`isValidated` credential flag — meaning unresolved, temporary override in
   effect (Step 2, added 2026-09-24).** Observed `false` even for a Shopify
   credential confirmed working via real executed data, across two different
-  testers/sessions in the same org. Not yet confirmed whether this is a
-  stale/wrong MCP-side field, or reflects something narrower than "currently
-  usable." Needs a definitive answer from the platform team; Step 2's
-  override should be revisited once known.
+  testers/sessions in the same org. Needs a definitive answer from the
+  platform team; Step 2's override should be revisited once known.
 - **Operation `dev` stage — unconfirmed as a real value.** Step 5 now blocks
   `dev`-stage operations, but no live call has ever returned this stage —
   only `release` and `preview` observed so far. Verify the real set of stage
   values with the platform team.
 - SAP Business One has two distinct catalog entries — `sap_b1` (on-prem,
-  DIS API) and `sapbusinessone` (cloud) — confirmed via live testing. Step 4
-  now explicitly checks for this kind of app-identity ambiguity, not just
-  operation-level ambiguity.
-- Multi-workflow decomposition (Step 0) has now been exercised live — a
-  partner explicitly asked to combine two distinct trigger events into one
-  workflow, and the skill correctly refused with reasons and proposed the
-  correct split instead. Still not yet confirmed: a full run all the way
-  through Step 11 on a multi-workflow set.
+  DIS API) and `sapbusinessone` (cloud) — confirmed via live testing on two
+  separate runs. When only one has a saved credential, Step 2 now resolves
+  this silently rather than asking (see Asking Questions) — confirmed
+  working correctly on the second product-sync test.
+- Multi-workflow decomposition (Step 0) has been exercised live — a partner
+  explicitly asked to combine two distinct trigger events into one workflow,
+  and the skill correctly refused with reasons and proposed the correct
+  split instead. Still not yet confirmed: a full run all the way through
+  Step 11 on a multi-workflow set.
 - No arise-mcp tool currently exposes remaining workflow allocation/quota.
+- **Tool-approval prompt volume**: a project-level `settings.json` now
+  pre-approves all read-only arise-mcp and Context7 tools; `create_workflow`
+  and `save_workflow` still prompt individually as a deliberate second
+  safety layer beyond Step 9. Confirmed this cuts the Claude-Code-level
+  approval prompts from ~7 to ~2 per run.
 
 ---
 
@@ -389,38 +447,45 @@ and no tool exposes the node/edge envelope schema directly — see Known Limits.
   correct split instead of complying.
 - Always re-resolve `org_id` every run — never assume the last-used org still
   applies.
-- Use Context7/appse-ai-docs as a first-pass, not final, source for field
-  requirements — the live `get_operation_detail` call always governs when
-  they disagree.
-- If Context7 is unavailable, fall back to the live call and mark affected
-  mappings as not cross-checked — never stall or fabricate what docs say.
-- A shallow/top-level-only result from `get_operation_detail` on an object-
-  or array-typed parameter does not count as resolved — treat its internal
-  shape as still unknown until confirmed by docs, the user, or a confirmed
-  guess.
+- Use documentation as a first-pass, not final, source for field
+  requirements — the live operation-detail call always governs when they
+  disagree.
+- If documentation lookup is unavailable, fall back to the live call and
+  mark affected mappings as not cross-checked — never stall or fabricate
+  what documentation says.
+- A shallow/top-level-only result from the live operation-detail call on an
+  object- or array-typed parameter does not count as resolved — treat its
+  internal shape as still unknown until confirmed by documentation, the
+  user, or a confirmed guess.
 - Never guess field-reference expression syntax — use the documented
   `{{ $payload... }}` / `{{ $('nodeName')... }}` forms, never invented syntax.
 - Never guess a data-shape, field mapping, or app/operation identity neither
   source resolves — stop and ask, or get explicit confirmation on a small
   guessed set.
 - Never expand tool access mid-run — if the allowed tools aren't enough, stop
-  and say so; don't request ad hoc access in the moment. This includes never
-  using Context7 access to justify broader arise-mcp use or vice versa.
+  and say so (in plain language, per Tone); don't request ad hoc access in
+  the moment.
 - Release and preview stage operations are both acceptable without extra
   confirmation; dev-stage operations are never used.
 - Check for an existing matching workflow before creating — never duplicate
   silently.
 - Never ask a question whose right answer depends on a later step's result
-  before that step has run; only batch genuinely independent questions, and
-  number them explicitly when batched. See Asking Questions.
+  before that step has run; only batch genuinely independent questions,
+  number them when batched, and don't ask again what's already been
+  resolved unambiguously. See Asking Questions.
 - Present a full summary and wait for explicit confirmation before writing
   anything, and flag explicitly if the requested shape is more complex than
   the validated reference.
+- **Never name or reference internal tools, MCP servers, or system
+  implementation details in anything partner-facing** — describe
+  capabilities and limitations in plain business language instead. See Tone.
 - State decision-relevant facts (allocation counts, unconfirmed mappings,
   preview-stage usage) plainly and confidently — never wrap them in
   self-doubting meta-commentary about what the skill itself can't do or
   confirm. See Tone.
-- On any tool error, report the exact error text — do not paraphrase or
-  silently retry more than once.
+- On any tool error, report the real, substantive problem plainly — strip or
+  rephrase away any internal tool/system names inside the raw error text
+  (per Tone) while keeping the actual diagnostic content intact. Do not
+  paraphrase away the substance, and do not silently retry more than once.
 - On being asked to stop, stop immediately, make no further tool calls, and
-  report exactly what has and hasn't changed.
+  report exactly what has and hasn't changed, in plain language.
