@@ -12,8 +12,13 @@
       "mcp__claude_ai_arise-mcp__list_workflows",
       "mcp__claude_ai_arise-mcp__get_workflow",
       "mcp__claude_ai_arise-mcp__save_workflow",
+      "mcp__claude_ai_arise-mcp__get_node_data",
       "mcp__context7__resolve-library-id",
-      "mcp__context7__query-docs"
+      "mcp__context7__query-docs",
+      "mcp__claude_ai_Context7__resolve-library-id",
+      "mcp__claude_ai_Context7__query-docs",
+      "Read(./skills/workflow-creator/**)",
+      "Read(./.claude/skills/workflow-creator/**)"
     ]
   }
 }
