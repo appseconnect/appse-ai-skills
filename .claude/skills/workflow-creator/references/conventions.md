@@ -138,9 +138,34 @@ the field mappings. A search node feeding a Decision usually sets
 `$('<current_name>')`, so give each node a clear, unique name and use that
 exact string in expressions.
 
+**Which node to reference (what the real files show):**
+- The node right after the trigger — or right after a Filter — reads the
+  record with **`$payload.…`**. Every reference file's first lookup does
+  this (e.g. `email: {{$payload.customer.email}}`).
+- Nodes *after a lookup + Decision* (the create/update actions) read
+  source-record fields from the trigger by name (`$('Shopify').payload.…`)
+  in two working reference files — that's confirmed.
+- **Not confirmed, and failed once:** a lookup placed after a Filter that
+  read the trigger by name instead of `$payload` (Workflow 12, 2026-09-24).
+  Its field Preview was blank and the search returned every customer. So:
+  whatever sits directly after a Filter uses `$payload`. When a Filter sits
+  between the trigger and later nodes, prefer referencing the Filter node
+  by name for source fields — it carries only the records that passed —
+  and check the field Preview isn't blank.
+
 **Every edge:** `id`, `source`, `target`, `sourceHandle`, `targetHandle`
 (`"default"`). `sourceHandle` is `"default"`, except out of a
 `DecisionNode`, where it's `"true"` or `"false"`.
+
+## Condition operators seen in real workflows
+Inside `advance_filter`, conditions in the same inner list are **AND**ed
+(confirmed: parallel-branch reference). Operators seen:
+- `basic` / `exist` — field exists (`rightValue: ""`)
+- `basic` / `is_not_empty` — field exists **and isn't blank**
+  (`rightValue: ""`); set in the portal UI on Workflow 12, 2026-09-24. Prefer
+  this over `exist` for guarding match keys.
+- `string` / `equal`, `string` / `not_equal`
+- `number` / `equal`
 
 ## Node types now confirmed (previously only AppTriggerNode/AppNode seen)
 - `DecisionNode` — `true`/`false` output handles, `advance_filter` condition
@@ -150,11 +175,19 @@ exact string in expressions.
 - `FilterNode` — same `advance_filter` shape as DecisionNode, but a single
   `default` output; only matching records pass through. Used for dedupe-
   and-skip, not branching (no true/false split).
-- `SplitterNode` — fans out an array field for per-item processing.
-  Confirmed to exist structurally; its own configuration mechanism (how it
-  knows what to split) is unclear from these examples — properties were
-  empty in the one case seen. Do not assume a specific config shape for it
-  without further confirmation.
+- `SplitterNode` — fans out a **nested list inside each record** for
+  per-element processing. The one real example
+  (`pattern-sku-reconciliation-and-multibranch-order.json`): trigger (new
+  orders) → Splitter (`properties: {}`) → `Get Item by ItemCode` reading the
+  element with `$payload.sku` → Filter → `Create New Items`, where later
+  nodes read the element as `$('Splitter').payload.<field>`. Note the
+  reference uses `'Splitter'` (the node's original name) even though its
+  `current_name` is "Splitting the Items" — which name the platform resolves
+  isn't confirmed; check the field Preview. How it knows *which* list to
+  split isn't in the saved config.
+  **Not needed** for top-level trigger records (each customer / order) —
+  the platform already runs each record through the flow one at a time;
+  confirmed by live run metrics and every reference file.
 - `JsonConverterNode` — parses a JSON string field (e.g. an AI node's raw
   text output) into structured data for downstream nodes. Configured via a
   `fieldsToConvert` expression pointing at the field to parse.

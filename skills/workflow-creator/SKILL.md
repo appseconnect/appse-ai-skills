@@ -149,7 +149,7 @@ combined; they are not a whitelist of allowed shapes.
 | `DecisionNode` | If/else on an `advance_filter` condition | `true`, `false` |
 | `FilterNode` | Lets only matching records continue; others stop silently | `default` |
 | `JsonConverterNode` | Parses a JSON string field into structured data | `default` |
-| `SplitterNode` | Fans out an array for per-item processing — **config not confirmed**, see Known Limits | `default` |
+| `SplitterNode` | Fans out a nested list inside each record for per-element processing — build it like the confirmed reference (see `references/conventions.md`) | `default` |
 
 Node-level fields, edge fields, and the `advance_filter` condition shape are
 documented in `references/conventions.md` — copy those shapes exactly.
@@ -168,7 +168,7 @@ Read the partner's scenario sentence by sentence and map each rule:
 | "Y needs Z to exist first" (e.g. order needs customer) | Search Z → `DecisionNode` → `true`: create Y with found key; `false`: create Z → then create Y |
 | "Try match on A, then B, then C" | Chain of search `AppNode` → `DecisionNode` pairs, each `false` branch trying the next criterion |
 | "Also notify / also do something else" | A second branch straight off the trigger (parallel) |
-| "For each line / item" | `SplitterNode` — config unconfirmed; flag it (see Known Limits) |
+| "For each line / item" (a list *inside* each record, where each element needs its own lookup/create) | `SplitterNode` — see "Decide the unit of processing". Not needed for top-level records, or when the target accepts the whole list in one call |
 
 Rules the scenario doesn't state don't get a block — don't add lookups,
 branches, or notifications nobody asked for.
@@ -181,9 +181,11 @@ Build it from the blocks above, then:
 - In Step 11, suggest they give it a quick test run in the portal before
   switching it on.
 
-The only genuine blockers are unknowns in a block itself (a `SplitterNode`'s
-config, or a node type not listed above) — for those, ask. An unfamiliar
-*combination* of known blocks is not a blocker.
+The only genuine blocker is a node type not listed above — for that, ask.
+An unfamiliar *combination* of known blocks is not a blocker. (A
+`SplitterNode` is buildable from the reference, but which list it splits
+isn't visible in its saved config — so when you use one, tell the partner in
+Step 11 to confirm in the portal that it splits the intended list.)
 
 ---
 
@@ -197,8 +199,56 @@ judgement to this scenario. A reference that worked for one app pair is not
 proof it's right for this one, and a scenario with no reference is not a
 reason to hold back.
 
+**Follow the data flow — every node reads from the node that just shaped the
+record.** Records move through the workflow one step at a time; each Filter,
+Decision, or lookup changes *which* records continue. So a node must take its
+input from the step directly before it (`$payload`), or from a named earlier
+node **on the same path that still carries the current record** — never
+jump back past a Filter or Decision to the trigger:
+- The node directly after a Filter (or the trigger) reads the record with
+  `$payload.…` — never `$('<trigger>')`. Reaching back to the trigger
+  bypasses the Filter, and here it came through **empty**.
+- After a lookup, fields about the *found record* come from the lookup
+  (`$payload.…` or `$('<lookup node>').payload.…`); fields about the
+  *source record* come from the closest earlier node that still carries it
+  on this path — when a Filter is in the path, that's the Filter by name,
+  not the trigger. See `references/conventions.md` for exactly what's
+  confirmed.
+- In Step 10, open each node's mapping and ask: "does this expression read
+  the record that actually reached this node?" If the answer is "it reads
+  the trigger from three steps back", fix it.
+
+(Real failure, 2026-09-24: a search mapped the email from the trigger
+instead of from the "skip if no email" Filter right before it. The value
+came through blank, and Business Central returned all ~1,300 customers for
+each of 40 Shopify customers — 53,080 records into a Decision feeding an
+update.)
+
+**Decide the unit of processing — do you need a Splitter?** Work out, for each
+step, whether it should act once per *record* or once per *element of a list
+inside the record*. Decide this yourself from the data shape; don't default
+either way:
+- **Top-level records from the trigger** (each customer, each order) are
+  already processed one at a time by the platform — the trigger's `limit`
+  batch is iterated per record. Evidence: lookups straight after a trigger
+  ran once per record in live runs (10 calls for 10 customers; 40 for 40),
+  and every reference workflow relies on this without a Splitter. **No
+  Splitter for "each customer / each order".**
+- **A nested list inside each record** (an order's line items, a product's
+  variants, a customer's addresses) needs a `SplitterNode` **only when each
+  element must go through its own step** — its own lookup, Decision, or
+  create (e.g. check each line's SKU exists in the ERP, create missing
+  items).
+- **No Splitter when the target takes the whole list in one call** — e.g. a
+  sales-order create whose lines field accepts an array; map it with a
+  projection (`lineItems.nodes[].sku`) instead.
+- When you do use one, build it the way the confirmed reference does (see
+  `references/conventions.md`), and state in Step 9 which list is being
+  split and why.
+
 **Design, then attack your own design.** Before Step 9, walk the flow node by
 node and ask what a real integration expert would ask:
+- **Is every node reading the right record?** (See data flow above.)
 - **What if this value is empty or missing?** Any key used to find, match,
   or target a record — email, order number, SKU, external ID — can arrive
   blank. What happens downstream if it does? (An empty search filter often
@@ -508,7 +558,9 @@ unsure), **not** `{{trigger.field}}`:
 - `{{ $payload.fieldName }}` — reference a field from the immediately
   preceding node
 - `{{ $('nodeName').payload.fieldName }}` — reference a field from a named
-  earlier node
+  earlier node **on the same path** — never reach back past a Filter or
+  Decision to the trigger (see "Follow the data flow" in Think Like an
+  Integration Expert)
 - Nested fields use dot notation (`{{ $payload.shipping.city }}`); arrays
   support `[*]`, indexing, and filter expressions — only use these if the
   mapping genuinely needs them.
@@ -537,8 +589,7 @@ app-specific mappings from the reference.
   Still read the closest reference file for the envelope details. Say in
   Step 9 that it's a custom flow — don't stop to ask just because no
   reference matches.
-- Only stop and ask if a block's own configuration is unknown (e.g. a
-  `SplitterNode`) or a needed node type isn't in Building Blocks.
+- Only stop and ask if a needed node type isn't in Building Blocks.
 
 **Then review the design as an integration expert** (see Think Like an
 Integration Expert), whichever route produced it — a reference file only
@@ -591,7 +642,9 @@ and other non-app nodes don't take one.) The trigger is the easiest to miss
 
 **Then verify:** call `get_workflow` on the workflow just saved and check
 that every `AppTriggerNode`/`AppNode` has a `credential_id` matching Step 2,
-that no mandatory field (per Step 6) is missing or `""`, **and that the
+that no mandatory field (per Step 6) is missing or `""`, **that every
+mapping reads from the node that actually passes the record to it (not the
+trigger, when a Filter or Decision sits in between), and that the
 safeguards from your expert review (listed in Step 9) actually made it into
 the saved flow.** If anything is missing, fix it with `save_workflow` and
 re-check; report anything still wrong — do not tell the partner the build
@@ -735,10 +788,16 @@ conversation.)*
   Step 11 on a multi-workflow set, or the new "plan with alternatives"
   presentation format (Step 0b, added 2026-09-24) in a live run.
 - **`SplitterNode`'s own configuration mechanism is unclear.** The one
-  confirmed real example has empty `properties` — how it determines what
-  array field to split on is not established. Do not assume a specific
-  config shape for it without further confirmation; if a build needs one,
-  treat this as an open question to raise rather than a solved pattern.
+  confirmed real example has empty `properties`, sits right after the
+  trigger, and splits the order's line items — how it knows *which* list to
+  split isn't in the saved config. Since 2026-09-24 the skill decides for
+  itself whether a Splitter is needed (see "Decide the unit of processing")
+  and, when it is, builds it like the reference and asks the partner to
+  confirm the split list in the portal. Confirm the real config mechanism
+  with the platform team.
+- **Top-level records are iterated per record without a Splitter** —
+  confirmed from live run metrics (Workflow 11: 10 search calls for 10
+  customers; Workflow 12: 40) and from every reference workflow.
 - **No fallback-cascade entity-resolution example exists** (e.g. email, then
   phone, then name as successive match attempts). Since 2026-09-24 the skill
   composes this from Building Blocks (chained search → Decision pairs) when

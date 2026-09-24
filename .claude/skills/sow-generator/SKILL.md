@@ -8,6 +8,8 @@ description: >
   to "draft a SOW," "write the scope of work," or "turn this digest into a
   proposal document." Always asks for the partner's own SOW format first;
   falls back to a generic industry-standard structure only if none is given.
+  Always delivers the final SOW as a Word (.docx) or PDF file, ready to send
+  to the customer.
   Not for estimating effort or team size — that's a separate downstream
   skill that consumes this one's output.
 license: Internal — appse ai Partner Accelerator
@@ -202,6 +204,48 @@ any deliverable in Step 3 couldn't be grounded in a confirmed capability,
 say so plainly rather than presenting it with the same confidence as one
 that was.
 
+### Step 11 — Deliver the SOW as a Word or PDF File
+
+**The final output of this skill is always a file** — the chat version in
+Step 10 is the review draft, not the deliverable. After presenting it, ask
+only which format:
+
+> "I'll put this into a file for you to send to the customer. Which format?
+> 1. **Word (.docx)** — editable, best if you'll still make changes
+> 2. **PDF** — fixed layout, ready to send
+> 3. **Both**"
+
+If the partner already said which format earlier in the conversation, use
+that without asking again. Then:
+
+- **Build the file from the SOW exactly as approved in chat** — same
+  sections, order, and wording. Don't add, drop, or reword content while
+  converting. If the partner asks for changes, update the chat version
+  first, then regenerate the file.
+- **Use the right skill:** the `docx` skill for Word, the `pdf` skill for
+  PDF. For "both", build the Word file first and produce the PDF from the
+  same content so they match.
+- **Template:** if the partner supplied their own SOW template as a `.docx`
+  in Step 0, fill that document (keeping its styles, headers, logo) rather
+  than creating a new one. Otherwise use a clean, neutral professional
+  layout: title, the header block (account, date, reference), then each
+  section as a heading. Don't add appse ai branding — this is the partner's
+  document to their customer; use their branding only if they provide it.
+- **Carry the flags into the file:** if the SOW is provisional (Step 2), put
+  a clear "PROVISIONAL DRAFT — pending follow-up call" line at the top of
+  the document; keep the Assumptions wording ("please confirm"), the
+  "indicative" label on the timeline, and the Commercial Terms placeholder.
+- **File name and location:** `SOW - {Account Name} - {YYYY-MM-DD}.docx` /
+  `.pdf`, saved in the current working directory unless the partner names
+  another folder. Never overwrite an existing file with the same name —
+  add a version suffix (`v2`, `v3`) instead.
+- **Report back** with the file path(s), and remind the partner to review
+  it before sending — especially the Assumptions and Commercial Terms
+  placeholder.
+
+The skill isn't finished until the file exists and its path has been
+reported.
+
 ---
 
 ## Allowed Tools
@@ -214,6 +258,15 @@ list_operations → used only in Step 3, same purpose
 No write tool is used by this skill. Never call `create_workflow`,
 `save_workflow`, or anything that modifies pricing, contracts, or the
 partner's org.
+
+### Local file output — Step 11 only
+
+`docx` skill → create the Word version of the approved SOW
+`pdf` skill → create the PDF version of the approved SOW
+
+Used on every run, in Step 11, once the partner has chosen the format. Writes go to
+the working directory (or a folder the partner names) — never overwrite an
+existing file.
 
 ---
 
@@ -253,5 +306,9 @@ partner's org.
   indicative timeline are always present, regardless of format
 - Indicative Timeline is always labeled as indicative, never presented as a
   committed date or resourced estimate
+- The final output is always a file — ask only Word, PDF, or both, then
+  build it from the SOW as approved in chat, carrying the provisional flag,
+  Assumptions wording, and Commercial Terms placeholder into it. The run
+  isn't complete until the file path is reported
 - On being asked to stop, stop immediately and report exactly what has and
   hasn't been drafted so far
