@@ -47,6 +47,50 @@ simpler replace-the-array behavior is universal.**
 **Status: approved reference for create-vs-update; use this file
 specifically when nested/sub-record fields are involved.**
 
+## pattern-dedupe-create-or-update-product.json
+
+**Demonstrates:** create-or-update for **products**, in the usual direction —
+ERP is the product master, pushing to the store. Trigger (D365 BC items
+updated) → Magento2 `Get product by SKU` (`sku: {{$payload.number}}`,
+`always_output_data: true`) → `DecisionNode` "SKU exists in Magento"
+(`$payload.sku` **equal** `$('Dynamics 365 Business Central').payload.number`)
+→ `true` → `Update a product` (SKU in the URL field `sku`, fields in a
+`product` object), `false` → `Create a product` (everything inside
+`product`).
+
+**What it confirms:**
+- The lookup straight after the trigger reads `$payload` (same as every
+  other reference).
+- Create/update nodes after a lookup + Decision read source fields from the
+  trigger **by its `current_name`** (`$('Dynamics 365 Business Central')`) —
+  with **no Filter in between**. Consistent with the other working
+  references; it does not tell us what happens when a Filter sits in the
+  path.
+- Magento2 wraps product fields in a `product` object; update takes the SKU
+  outside it.
+
+**Values not to copy blindly:**
+- `type_id: "simple"`, `status: "1"` (enabled), `visibility: "4"` (catalog
+  and search) are standard Magento codes — reasonable defaults, but still
+  list them under "Mappings I worked out" in Step 9.
+- `attribute_set_id: "4"` is Magento's default attribute set, but many
+  stores use their own — treat it as a **company-specific setting** (ask).
+
+**Gaps an expert build should close (not edited here — this is the export
+as supplied):**
+- No guard for an empty item number before the lookup, and the Decision
+  only checks `equal` — add the not-empty checks per "Think Like an
+  Integration Expert".
+- The update re-sends `status: "1"` and `visibility: "4"`, which would
+  re-enable a product someone deliberately disabled in Magento. On updates,
+  leave out fields the store team manages unless the partner wants them
+  synced.
+- Trigger is "Items **updated**" with a start date of 2026-02-19 — confirm
+  it also fires for newly created items, and start new builds from now.
+
+**Status: reference for create-or-update of products (ERP → e-commerce).**
+Supplied 2026-09-24; tested status not stated — confirm with the team.
+
 ## pattern-find-or-create-customer-then-order.json
 
 **Demonstrates:** find-or-create a parent record, then create a child record

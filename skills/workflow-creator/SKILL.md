@@ -324,6 +324,18 @@ literal field values, credential IDs, or app-specific mappings from them.**
 Use the closest one as a starting point when it fits; when none fits, compose
 from Building Blocks above.
 
+**References inform the build — your integration expertise decides it.**
+Check the references for shapes, field structures, and how a platform
+feature was used, but never treat a reference as correct just because it
+exists or once worked. Every reference was built for someone else's
+scenario, data, and system settings, and several have real gaps (no guard on
+an empty key, an equality-only match, updates that overwrite store-managed
+fields, a price mapped to the order total). For each thing you take from a
+reference, ask whether it's right for *this* partner's scenario and data,
+apply the Think Like an Integration Expert review on top, and fix or leave
+out anything that isn't. If your judgement and a reference disagree, go with
+the safer, better-reasoned design and say why in Step 9.
+
 ### Simple sync (one trigger, one action, no branching)
 Live reference, fetched via `get_workflow` (see Allowed Tools):
 
@@ -340,6 +352,7 @@ Read the local file directly — no MCP call needed for these:
 |---|---|---|
 | `references/pattern-dedupe-skip-return-request.json` | Search for a match on a stable key → if found, stop (no edge on the "exists" branch) | The user wants "don't create duplicates," with no update requirement |
 | `references/pattern-dedupe-create-or-update-customer.json` and `references/pattern-dedupe-create-or-update-businesspartner-subrecords.json` | Search for a match → `DecisionNode`, **both branches wired**: create if not found, update if found | Two independent confirmed examples, different app pairs. Use the `-subrecords` file specifically when the update touches a nested array field (e.g. addresses) — it shows how to preserve the original record's row identifier so the update doesn't duplicate the sub-record. |
+| `references/pattern-dedupe-create-or-update-product.json` | ERP item → search store product by SKU → `DecisionNode`: update if found, create if not | Product master data flowing from the ERP to the store (the usual direction) — shows the store's product object shape and SKU-based matching |
 | `references/pattern-find-or-create-customer-then-order.json` | Search for a parent record → `DecisionNode`: if found, create the child using the found parent's key; if not found, create the parent **then** the child in sequence | The child record (e.g. a sales order) can't be created without a parent (e.g. a customer) that may not exist yet — and the "found" branch should reuse the parent, not update it |
 | `references/pattern-sku-reconciliation-and-multibranch-order.json` | `SplitterNode` fans out line items → per-item existence check → create if missing | The workflow involves reconciling a list of sub-records (e.g. order line items against an item master) — **use only the SplitterNode → Get Item → Filter → Create Item portion of this file; the AI-node (`get_chat_completions`) reconciliation portion in this same file is not an approved pattern, see below** |
 | `references/pattern-parallel-branch-inventory-notification.json` | Multiple independent branches fan out directly from one trigger (not sequential) | The business process needs more than one independent thing to happen off the same event (e.g. update a record AND separately notify on a condition) |
@@ -783,6 +796,7 @@ or use one to justify expanding the other.
 references/pattern-dedupe-skip-return-request.json
 references/pattern-dedupe-create-or-update-customer.json
 references/pattern-dedupe-create-or-update-businesspartner-subrecords.json
+references/pattern-dedupe-create-or-update-product.json
 references/pattern-find-or-create-customer-then-order.json
 references/pattern-sku-reconciliation-and-multibranch-order.json
 references/pattern-parallel-branch-inventory-notification.json
@@ -931,6 +945,9 @@ conversation.)*
   records a write can touch, what the first run picks up, overwrites,
   loops. Add the safeguards yourself and list them under "Safety checks I
   added". References are a starting point, never the whole design.
+- Never copy a reference's logic or mappings without judging them against
+  this scenario — check references, then decide with your own integration
+  expertise; when they disagree, choose the safer design and explain why.
 - Always check every app the workflow uses has a saved credential before
   building. If one is missing, ask the partner to add it in the portal, wait,
   re-check with `list_credentials`, then continue — never build without it.

@@ -1,0 +1,279 @@
+{
+    "nodes": [
+        {
+            "id": "ccdd0213-db83-4102-a07a-231433f471d5",
+            "data": {
+                "app": {
+                    "code": "dynamics365businesscentral",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/dynamics365bc-icon.svg",
+                    "doc_url": "/app-integrations/dynamics-365-business-central",
+                    "category": [
+                        "ERP"
+                    ],
+                    "has_tools": false,
+                    "description": "Microsoft’s all-in-one ERP system for managing finance, operations, inventory, and sales.",
+                    "has_actions": true,
+                    "display_name": "Dynamics 365 Business Central",
+                    "has_triggers": true
+                },
+                "idx": 1,
+                "cron": "*/3 * * * *",
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": false
+                },
+                "properties": {
+                    "limit": "10",
+                    "since_from": "2026-02-19T12:51:00.000Z"
+                },
+                "action_code": "on_items_updated",
+                "action_name": "Items updated",
+                "current_name": "Dynamics 365 Business Central",
+                "original_name": "Dynamics 365 Business Central",
+                "next_data_from_template": "={{date_max_by($payload[*],&lastModifiedDateTime) }}"
+            },
+            "type": "AppTriggerNode",
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": 0,
+                "y": 65
+            },
+            "selected": false,
+            "sourcePosition": "right",
+            "targetPosition": "left",
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "6ed4c325-6fa1-453a-9d79-9cdac670a3d7",
+            "data": {
+                "app": {
+                    "code": "magento2",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/magento-icon.svg",
+                    "doc_url": "/app-integrations/magento2/",
+                    "category": [
+                        "Ecommerce"
+                    ],
+                    "has_tools": false,
+                    "description": "Adobe Commerce (Magento) is a powerful, flexible e-commerce platform for creating unique online shopping experiences.",
+                    "has_actions": true,
+                    "display_name": "Magento2",
+                    "has_triggers": true
+                },
+                "idx": 2,
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": true
+                },
+                "properties": {
+                    "sku": "={{$payload.number}}"
+                },
+                "action_code": "get_product_by_sku",
+                "action_name": "Get product by SKU",
+                "current_name": "Search item by input sku",
+                "original_name": "Magento2"
+            },
+            "type": "AppNode",
+            "dragging": true,
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": 370,
+                "y": 65
+            },
+            "selected": false,
+            "sourcePosition": "right",
+            "targetPosition": "left",
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "689716ac-621c-4fbf-8916-1b13c116443b",
+            "data": {
+                "idx": 3,
+                "settings": {
+                    "disable_case_sensitivity": false
+                },
+                "properties": {
+                    "advance_filter": [
+                        [
+                            {
+                                "operator": {
+                                    "type": "string",
+                                    "operation": "equal"
+                                },
+                                "leftValue": "={{$payload.sku}}",
+                                "rightValue": "={{$('Dynamics 365 Business Central').payload.number}}"
+                            }
+                        ]
+                    ]
+                },
+                "current_name": "SKU exists in Magento",
+                "original_name": "Decision"
+            },
+            "type": "DecisionNode",
+            "measured": {
+                "width": 136,
+                "height": 120
+            },
+            "position": {
+                "x": 740,
+                "y": 65
+            },
+            "selected": false,
+            "sourcePosition": "right",
+            "targetPosition": "left",
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "ea123c3e-dc67-4742-a6a2-144b25735a32",
+            "data": {
+                "app": {
+                    "code": "magento2",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/magento-icon.svg",
+                    "doc_url": "/app-integrations/magento2/",
+                    "category": [
+                        "Ecommerce"
+                    ],
+                    "has_tools": false,
+                    "description": "Adobe Commerce (Magento) is a powerful, flexible e-commerce platform for creating unique online shopping experiences.",
+                    "has_actions": true,
+                    "display_name": "Magento2",
+                    "has_triggers": true
+                },
+                "idx": 5,
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": false
+                },
+                "properties": {
+                    "product": {
+                        "sku": "={{$('Dynamics 365 Business Central').payload.number}}",
+                        "name": "={{$('Dynamics 365 Business Central').payload.displayName}}",
+                        "price": "={{$('Dynamics 365 Business Central').payload.unitPrice}}",
+                        "status": "1",
+                        "type_id": "simple",
+                        "visibility": "4",
+                        "attribute_set_id": "4"
+                    }
+                },
+                "action_code": "create_product",
+                "action_name": "Create a product",
+                "current_name": "Create new products",
+                "original_name": "Magento2"
+            },
+            "type": "AppNode",
+            "dragging": true,
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": 1110,
+                "y": 130
+            },
+            "selected": false,
+            "sourcePosition": "right",
+            "targetPosition": "left",
+            "zIndex": "$undefined"
+        },
+        {
+            "id": "e1a9050f-4441-4268-9dd7-a149e5307e66",
+            "data": {
+                "app": {
+                    "code": "magento2",
+                    "icon": "https://appseai-abercgd5h2dbh4fs.a03.azurefd.net/applogo/magento-icon.svg",
+                    "doc_url": "/app-integrations/magento2/",
+                    "category": [
+                        "Ecommerce"
+                    ],
+                    "has_tools": false,
+                    "description": "Adobe Commerce (Magento) is a powerful, flexible e-commerce platform for creating unique online shopping experiences.",
+                    "has_actions": true,
+                    "display_name": "Magento2",
+                    "has_triggers": true
+                },
+                "idx": 4,
+                "settings": {
+                    "on_error": "stop",
+                    "execute_once": false,
+                    "retry_on_fail": false,
+                    "always_output_data": false
+                },
+                "properties": {
+                    "sku": "={{$('Dynamics 365 Business Central').payload.number}}",
+                    "product": {
+                        "name": "={{$('Dynamics 365 Business Central').payload.displayName}}",
+                        "price": "={{$('Dynamics 365 Business Central').payload.unitPrice}}",
+                        "status": "1",
+                        "type_id": "simple",
+                        "visibility": "4",
+                        "attribute_set_id": "4"
+                    }
+                },
+                "action_code": "update_product",
+                "action_name": "Update a product",
+                "current_name": "Update Existing Products",
+                "original_name": "Magento2"
+            },
+            "type": "AppNode",
+            "dragging": true,
+            "measured": {
+                "width": 240,
+                "height": 120
+            },
+            "position": {
+                "x": 1110,
+                "y": 0
+            },
+            "selected": true,
+            "sourcePosition": "right",
+            "targetPosition": "left",
+            "zIndex": "$undefined"
+        }
+    ],
+    "edges": [
+        {
+            "id": "df42157c-caf4-44aa-abec-0da1497b05de",
+            "source": "ccdd0213-db83-4102-a07a-231433f471d5",
+            "target": "6ed4c325-6fa1-453a-9d79-9cdac670a3d7",
+            "sourceHandle": "default",
+            "targetHandle": "default"
+        },
+        {
+            "id": "2f20f9f5-9515-4398-a8ee-8c4db008495d",
+            "source": "6ed4c325-6fa1-453a-9d79-9cdac670a3d7",
+            "target": "689716ac-621c-4fbf-8916-1b13c116443b",
+            "sourceHandle": "default",
+            "targetHandle": "default"
+        },
+        {
+            "id": "f7567ed2-aeb5-458d-88b9-763aea133db9",
+            "source": "689716ac-621c-4fbf-8916-1b13c116443b",
+            "target": "ea123c3e-dc67-4742-a6a2-144b25735a32",
+            "sourceHandle": "false",
+            "targetHandle": "default"
+        },
+        {
+            "id": "a7d51ff5-da8c-4826-9991-af0d2d463c22",
+            "source": "689716ac-621c-4fbf-8916-1b13c116443b",
+            "target": "e1a9050f-4441-4268-9dd7-a149e5307e66",
+            "sourceHandle": "true",
+            "targetHandle": "default"
+        }
+    ],
+    "viewport": {
+        "x": 180,
+        "y": 309.5,
+        "zoom": 0.8
+    }
+}

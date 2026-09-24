@@ -7,6 +7,7 @@ edit field values, only read structure from them (same rule as the original
 single reference workflow).
 
 ## pattern-dedupe-skip-return-request.json
+
 **Demonstrates:** dedupe via search-before-write, skip silently if found.
 Trigger (WooCommerce order cancelled) → search SAP for an existing return
 request (stable key: `U_WEBORDID`) → `FilterNode` → `DecisionNode` on
@@ -15,6 +16,7 @@ The `true` branch (already exists) is a dead end — no action taken.
 **Status: approved reference for dedupe-and-skip.**
 
 ## pattern-dedupe-create-or-update-customer.json
+
 **Demonstrates:** the real create-vs-update pattern. Trigger (D365 BC
 customer created) → search Magento2 by email → `DecisionNode` "Customers
 exist" → **both branches wired**: `false` → `Create a customer`, `true` →
@@ -22,6 +24,7 @@ exist" → **both branches wired**: `false` → `Create a customer`, `true` →
 **Status: approved reference for create-vs-update.**
 
 ## pattern-dedupe-create-or-update-businesspartner-subrecords.json
+
 **Demonstrates:** a second, independent confirmation of create-vs-update —
 Trigger (Shopify customer updated) → search SAP B1 by email →
 `DecisionNode` → `false` → `create_businesspartner`, `true` →
@@ -31,7 +34,7 @@ generalizes rather than being a one-off.
 
 **Additional detail this file reveals that the customer example didn't:**
 when the update touches a nested array field (`BPAddresses`), the update
-payload references the *original* record's row identifier —
+payload references the _original_ record's row identifier —
 `{{$payload.BPAddresses[idx].RowNum}}`, pulled from the search result — to
 correctly target the existing sub-record. Without this, an update could
 silently create a duplicate address entry instead of updating the existing
@@ -44,12 +47,58 @@ simpler replace-the-array behavior is universal.**
 **Status: approved reference for create-vs-update; use this file
 specifically when nested/sub-record fields are involved.**
 
+## pattern-dedupe-create-or-update-product.json
+
+**Demonstrates:** create-or-update for **products**, in the usual direction —
+ERP is the product master, pushing to the store. Trigger (D365 BC items
+updated) → Magento2 `Get product by SKU` (`sku: {{$payload.number}}`,
+`always_output_data: true`) → `DecisionNode` "SKU exists in Magento"
+(`$payload.sku` **equal** `$('Dynamics 365 Business Central').payload.number`)
+→ `true` → `Update a product` (SKU in the URL field `sku`, fields in a
+`product` object), `false` → `Create a product` (everything inside
+`product`).
+
+**What it confirms:**
+- The lookup straight after the trigger reads `$payload` (same as every
+  other reference).
+- Create/update nodes after a lookup + Decision read source fields from the
+  trigger **by its `current_name`** (`$('Dynamics 365 Business Central')`) —
+  with **no Filter in between**. Consistent with the other working
+  references; it does not tell us what happens when a Filter sits in the
+  path.
+- Magento2 wraps product fields in a `product` object; update takes the SKU
+  outside it.
+
+**Values not to copy blindly:**
+- `type_id: "simple"`, `status: "1"` (enabled), `visibility: "4"` (catalog
+  and search) are standard Magento codes — reasonable defaults, but still
+  list them under "Mappings I worked out" in Step 9.
+- `attribute_set_id: "4"` is Magento's default attribute set, but many
+  stores use their own — treat it as a **company-specific setting** (ask).
+
+**Gaps an expert build should close (not edited here — this is the export
+as supplied):**
+- No guard for an empty item number before the lookup, and the Decision
+  only checks `equal` — add the not-empty checks per "Think Like an
+  Integration Expert".
+- The update re-sends `status: "1"` and `visibility: "4"`, which would
+  re-enable a product someone deliberately disabled in Magento. On updates,
+  leave out fields the store team manages unless the partner wants them
+  synced.
+- Trigger is "Items **updated**" with a start date of 2026-02-19 — confirm
+  it also fires for newly created items, and start new builds from now.
+
+**Status: reference for create-or-update of products (ERP → e-commerce).**
+Supplied 2026-09-24; tested status not stated — confirm with the team.
+
 ## pattern-find-or-create-customer-then-order.json
+
 **Demonstrates:** find-or-create a parent record, then create a child record
 that depends on it. Trigger (Shopify new order) → search D365 BC customer by
 email → `DecisionNode` on customer `number exist` → **both branches end in
 the same child action (create sales order), but get the customer number
 differently:**
+
 - `true` (customer exists) → `Create a new sales order`, with
   `customerNumber` taken from the **search result**
   (`$('<search node>').payload.number`)
@@ -63,6 +112,7 @@ differs from create-or-update: the "found" branch does not update the
 parent, it just reuses it.
 
 **Corrected from the original export (2026-09-24), not unmodified:**
+
 - The `true`-branch order line's `unitPrice` pointed at the order-level
   `currentSubtotalPriceSet` (the whole order's subtotal) instead of the
   per-line `lineItems.nodes[].originalUnitPriceSet` used on the `false`
@@ -80,7 +130,9 @@ mappings (Shopify GID stripping via `substringAfter`, `type: "Person"`) are
 field values — never copy them; resolve them fresh per Steps 6–7.
 
 ## pattern-sku-reconciliation-and-multibranch-order.json
+
 **Demonstrates:** three things in one workflow —
+
 1. SKU/item reconciliation: `SplitterNode` (fans out order line items) →
    `Get Item by ItemCode` → `FilterNode` (item exists) → `Create New Items`.
    **Approved reference for SKU/item reconciliation.**
@@ -96,6 +148,7 @@ field values — never copy them; resolve them fresh per Steps 6–7.
    AI-node portion of this shape without explicit sign-off.
 
 ## pattern-parallel-branch-inventory-notification.json
+
 **Demonstrates:** independent parallel branches off a single trigger (not
 sequential) — one branch updates inventory directly on a stable key, a
 second, separate `DecisionNode` (dual condition: exists AND value = 0)
@@ -105,6 +158,7 @@ branches fanning out from one trigger node.
 **Status: approved reference for parallel branching + notification actions.**
 
 ## Node and edge envelope (common to every file above)
+
 Use this when composing a custom flow (SKILL.md Building Blocks) — every
 reference file follows it.
 
@@ -138,15 +192,16 @@ the field mappings. A search node feeding a Decision usually sets
 `$('<current_name>')`, so give each node a clear, unique name and use that
 exact string in expressions. **Never copy a node name from a reference
 file** — `$('Splitter')`, `$('Shopify')`, `$('SAP Business One 2')` are
-those workflows' names. Use the names *you* gave the nodes in this
+those workflows' names. Use the names _you_ gave the nodes in this
 workflow (Workflow 15 broke by referencing `'Splitter'` when its Splitter
 was named "Split Variants").
 
 **Which node to reference (what the real files show):**
+
 - The node right after the trigger — or right after a Filter — reads the
   record with **`$payload.…`**. Every reference file's first lookup does
   this (e.g. `email: {{$payload.customer.email}}`).
-- Nodes *after a lookup + Decision* (the create/update actions) read
+- Nodes _after a lookup + Decision_ (the create/update actions) read
   source-record fields from the trigger by name (`$('Shopify').payload.…`)
   in two working reference files — that's confirmed.
 - **Not confirmed, and failed once:** a lookup placed after a Filter that
@@ -162,8 +217,10 @@ was named "Split Variants").
 `DecisionNode`, where it's `"true"` or `"false"`.
 
 ## Condition operators seen in real workflows
+
 Inside `advance_filter`, conditions in the same inner list are **AND**ed
 (confirmed: parallel-branch reference). Operators seen:
+
 - `basic` / `exist` — field exists (`rightValue: ""`)
 - `basic` / `is_not_empty` — field exists **and isn't blank**
   (`rightValue: ""`); set in the portal UI on Workflow 12, 2026-09-24. Prefer
@@ -172,6 +229,7 @@ Inside `advance_filter`, conditions in the same inner list are **AND**ed
 - `number` / `equal`
 
 ## Node types now confirmed (previously only AppTriggerNode/AppNode seen)
+
 - `DecisionNode` — `true`/`false` output handles, `advance_filter` condition
   array: `[[{operator: {type, operation}, leftValue, rightValue}, ...]]`.
   Can combine multiple conditions in one filter (AND logic, confirmed in
@@ -202,17 +260,18 @@ Inside `advance_filter`, conditions in the same inner list are **AND**ed
   `fieldsToConvert` expression pointing at the field to parse.
 
 ## Expression functions confirmed in these files
+
 Used by SKILL.md Step 6 (rung 2) to derive values for mandatory fields.
 Only these are confirmed working in real workflows — for any other function,
 check `docs/platform/key_concepts/expressions_mapping/` first; never invent
 a function name.
 
-| Function | What it does | Seen as |
-|---|---|---|
-| `substringAfter(text, marker)` | Text after a marker — e.g. strip a Shopify GID to its numeric ID | `substringAfter($('Shopify').payload.customer.id,'gid://shopify/Customer/')` |
-| `substringBefore(text, marker)` | Text before a marker — e.g. date part of an ISO timestamp | `substringBefore($('Shopify').payload.createdAt,'T')` |
-| `split(text, sep)[n]` | Split and take the nth part — e.g. first/last name from a display name, or the ID segment of a GID | `split($payload.id,'/')[4]`, `split(...displayName,' ')[0]` |
-| `date_max_by(array, &field)` | Latest date in an array — trigger watermark only (`next_data_from_template`), not for field mapping | `date_max_by($payload[*],&updatedAt)` |
+| Function                        | What it does                                                                                        | Seen as                                                                      |
+| ------------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `substringAfter(text, marker)`  | Text after a marker — e.g. strip a Shopify GID to its numeric ID                                    | `substringAfter($('Shopify').payload.customer.id,'gid://shopify/Customer/')` |
+| `substringBefore(text, marker)` | Text before a marker — e.g. date part of an ISO timestamp                                           | `substringBefore($('Shopify').payload.createdAt,'T')`                        |
+| `split(text, sep)[n]`           | Split and take the nth part — e.g. first/last name from a display name, or the ID segment of a GID  | `split($payload.id,'/')[4]`, `split(...displayName,' ')[0]`                  |
+| `date_max_by(array, &field)`    | Latest date in an array — trigger watermark only (`next_data_from_template`), not for field mapping | `date_max_by($payload[*],&updatedAt)`                                        |
 
 Joining values needs no function — two expressions side by side in one
 field concatenate (e.g. `{{...firstName}} {{...lastName}}`, confirmed in
@@ -229,6 +288,7 @@ list, warehouse, tax code, posting group) follows SKILL.md's rule: source
 field → run-time lookup action → ask the partner. Never a reference's value.
 
 **Common mandatory-field patterns (approach, not literal values):**
+
 - **Target record number/code required, source has a GID** → derive the
   numeric ID with `substringAfter` (or `split(...,'/')[4]`).
 - **Single name field required, source has first + last** → join them.
@@ -239,6 +299,7 @@ field → run-time lookup action → ask the partner. Never a reference's value.
   "not found" branch (see `pattern-find-or-create-customer-then-order.json`).
 
 ## Still not confirmed by any reference file
+
 - Email→phone→name fallback cascade for entity resolution (multiple
   chained Decision nodes trying successive match criteria).
 - Approval/validation gates in the sense originally described (a lookup
