@@ -5,8 +5,9 @@ description: >
   structured, confidence-tagged scoping digest (shown to partners as the
   "Discovery Summary") via arise-mcp app-catalog cross-checks. Use for
   "summarize this call," "digest these notes," "write a discovery summary,"
-  "turn this into requirements," or proactively for a pre-call checklist before a
-  discovery call. Always leads with a readiness signal, always tags every
+  "turn this into requirements," or — before a discovery call has happened —
+  for a Call Prep Checklist ("what should I ask on my call?", "help me prepare
+  for a discovery call"). Always leads with a readiness signal, always tags every
   fact as stated or inferred, and always merges into an existing digest for
   the same deal rather than duplicating it. Not for writing the SOW,
   estimate, or proposal — those are separate downstream skills that consume
@@ -37,12 +38,22 @@ happening.
 partner seeing it cold won't know what it is or that the SOW step depends
 on it. In **everything the partner sees**, use plain language instead:
 
-| Internal term (skill/pipeline only) | Say this to the partner |
-| ----------------------------------- | ----------------------- |
-| Requirement Digest                  | Discovery Summary       |
-| Readiness signal                    | Ready to scope?         |
-| Vocabulary map                      | Customer's terms        |
-| Vertical signals                    | Industry signals        |
+| Internal term (skill/pipeline only)       | Say this to the partner                     |
+| ----------------------------------------- | ------------------------------------------- |
+| Requirement Digest / digest               | Discovery Summary                           |
+| `summary` mode (digest path, Steps 1–9)   | Discovery Summary — "after the call"        |
+| `call-prep` mode (Step 10)                | Call Prep Checklist — "before the call"     |
+| Readiness signal                          | Ready to scope?                             |
+| Vocabulary map                            | Customer's terms                            |
+| Vertical signals                          | Industry signals                            |
+
+Never say "digest", "pre-call", or "mode" to the partner. When telling them
+which path you're taking, use plain phrasing, e.g.:
+
+- _"Sounds like the call hasn't happened yet, so I'll put together a **Call
+  Prep Checklist**: what to prepare and what to ask."_
+- _"I'll turn these call notes into a **Discovery Summary**: what the
+  customer needs, what's confirmed vs. assumed, and what to follow up on."_
 
 The skill name (`requirement-digest`) and the field order stay unchanged,
 since downstream skills (e.g. `sow-generator`) parse this output. Only the
@@ -103,7 +114,7 @@ whose specific facts should appear in an unrelated deal:
 | Field                | Required | Source                                                                               | Description                                                                                              | Default                           |
 | -------------------- | -------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- | --------------------------------- |
 | `discovery_material` | ✅       | User provides                                                                        | Raw call transcript, notes, emails, or chat export from a sales discovery conversation                   | —                                 |
-| `mode`               | ⬜       | User states, or inferred from phrasing ("what should I ask" vs. "here are my notes") | `digest` (turn material into a scoping digest) or `pre-call` (produce a checklist before a call happens) | `digest`                          |
+| `mode`               | ⬜       | User states, or inferred from phrasing ("what should I ask" vs. "here are my notes") | `summary` (after the call: turn material into a Discovery Summary) or `call-prep` (before the call: produce a Call Prep Checklist) | `summary`                         |
 | `existing_digest`    | ⬜       | User provides, if this is a second-or-later call for the same deal                   | A previously-generated digest for this deal, to merge into rather than duplicate                         | none — treat as the first call    |
 | `org_id`             | ⬜       | User confirms, only if app cross-checking is wanted                                  | Which appse ai org's app catalog to check named apps against via `list_apps`                             | skip the cross-check if not given |
 
@@ -113,12 +124,13 @@ whose specific facts should appear in an unrelated deal:
 
 Follow these steps in order. Do not skip or reorder.
 
-### Step 0 — Determine Which Mode Applies
+### Step 0 — Before or After the Call?
 
-If `mode` is `pre-call` (or the user is asking what to prepare/ask before a
+If `mode` is `call-prep` (or the user is asking what to prepare/ask before a
 call rather than pasting material from one that already happened), skip
-directly to **Step 10**. Otherwise, proceed through Steps 1–9 for the main
-digest path.
+directly to **Step 10** (Call Prep Checklist). Otherwise, proceed through
+Steps 1–9 to produce the Discovery Summary. Tell the partner which one
+you're doing in plain words (see Partner-Facing Language).
 
 ### Step 1 — Assess Input Sufficiency
 
@@ -238,14 +250,17 @@ just the final state. Tight, scannable sections — this is read quickly by a
 human and parsed by the next skill in the pipeline, not read as a
 narrative. Length scales with the input, not a fixed template length.
 
-### Step 10 — Build the Pre-Call Checklist (pre-call mode only)
+### Step 10 — Build the Call Prep Checklist (before the call only)
 
-Entry point from Step 0 when no call has happened yet. Give a short,
-targeted checklist of what to prepare or ask, based on whatever is already
-known about the deal (vertical, systems mentioned so far, if any). A
-structured intake going _in_ produces cleaner material coming out in Step 1
-next time — this is the one place this skill acts before the call rather
-than cleaning up after it. Do not proceed through Steps 1–9 in this mode.
+Entry point from Step 0 when no call has happened yet. Title the output
+**Call Prep Checklist — [account name]** and give a short, targeted list of
+what to prepare or ask, based on whatever is already known about the deal
+(industry, systems mentioned so far, if any). A structured intake going
+_in_ produces cleaner material coming out in Step 1 next time — this is the
+one place this skill acts before the call rather than cleaning up after it.
+Do not proceed through Steps 1–9 on this path. End with: _"After the call,
+paste your notes or transcript here and I'll turn them into a Discovery
+Summary."_
 
 ---
 
@@ -274,7 +289,7 @@ built.
   not this skill
 - The readiness signal (Step 8) is a judgment call based on the
   Stated/Inferred/Missing mix, not a scored or quantified threshold
-- Not yet tested: pre-call checklist mode (Step 10) end-to-end, a
+- Not yet tested: the Call Prep Checklist (Step 10) end-to-end, a
   three-or-more-call merge chain, discovery material in a language other
   than English
 
@@ -282,9 +297,10 @@ built.
 
 ## Output Rules
 
-- Always call the output a **Discovery Summary** to the partner, and use the
+- Always call the output a **Discovery Summary** (after the call) or a
+  **Call Prep Checklist** (before the call) to the partner, and use the
   plain labels ("Ready to scope?", "Customer's terms", "Industry signals") —
-  never the internal terms
+  never "digest", "pre-call", "mode", or the other internal terms
 - Always include the tag legend under the title, and always end with the
   next-step line pointing to the SOW (or to the Open Questions, if a
   follow-up call is needed)
