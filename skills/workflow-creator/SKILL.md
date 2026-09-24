@@ -524,6 +524,27 @@ actually required live.
   rather than treating the top-level type alone as enough information to
   map against. (This is about an unknown *shape*; once the shape is known,
   filling its mandatory fields follows the ladder below.)
+- **Company-specific settings are never copied or guessed.** Values that
+  depend on how the customer's system is configured — currency code, price
+  list number, warehouse, item group, tax/VAT code, posting groups, number
+  series, company, sales channel — are different in every installation. A
+  reference workflow's value (e.g. SAP `Currency: "$$"`, `PriceList: "1"`)
+  only proves what worked in *that* customer's system; using it here is a
+  guess. For these, and only in this order:
+  1. **The source record carries it** — map it (e.g. a currency code on the
+     order or price in the source payload).
+  2. **A lookup operation can fetch it at run time** — check
+     `list_operations` on the target (or source) app for a get/list action
+     that returns it (e.g. "get default warehouse", "get price lists"). If
+     one exists, add it as a lookup node before the write and map from its
+     result; explain it in Step 9.
+  3. **Otherwise ask the partner** — batch every such setting for this
+     workflow into one numbered question before Step 9 (e.g. "Q1: Which
+     currency code should item prices use in SAP (e.g. USD, EUR)? Q2: Which
+     price list number should they go on?"). Say briefly why you're asking:
+     it's specific to their system, and no action exposes it.
+
+  Never fill these from rung 3 or 4 of the ladder below.
 - **Nested fields count too.** The live operation detail often lists an
   array or object (e.g. SAP `ItemPrices`, Business Central
   `salesOrderLines`) with **no inner schema, even marked optional** — while
@@ -550,8 +571,11 @@ actually required live.
      numeric ID). Reuse the *approach*, re-derived for this workflow's own
      payload — never paste the reference's literal expression.
   4. **Sensible constant** — a fixed value where the context makes it clear
-     (e.g. customer type `Person` for Shopify shoppers, `C`/customer for an
-     SAP B1 Business Partner created from a customer).
+     and it's the same in every installation (e.g. customer type `Person`
+     for Shopify shoppers, `C`/customer for an SAP B1 Business Partner
+     created from a customer, `lineType: "Item"`). **Not** for
+     company-specific settings like currency, price list, warehouse, or tax
+     code — see the rule above.
   5. **Ask** — only if no rung above gives a plausible value, ask the
      partner for that field before Step 9. Name the field and what it's for.
 - Anything filled from rungs 2–4 is a **proposed mapping**: fine to use, but
@@ -897,6 +921,11 @@ conversation.)*
   proposed mapping with its reason in Steps 9 and 11, and only ask when no
   rung gives a plausible value. Never save a workflow with a blank value
   anywhere in it.
+- Never copy or guess company-specific settings (currency, price list,
+  warehouse, tax code, posting group, number series) — use a source field,
+  else a run-time lookup action if one exists, else ask the partner in one
+  batched question. A reference workflow's value for these is never valid
+  for another customer.
 - Never silently invent a data-shape, app/operation identity, or structural
   pattern that no source resolves — stop and ask, or get explicit
   confirmation. (Proposed field mappings are different: make them, and

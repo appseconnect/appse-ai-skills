@@ -210,14 +210,14 @@ field concatenate (e.g. `{{...firstName}} {{...lastName}}`, confirmed in
 the live reference workflow and in the portal).
 
 **Nested required fields the live operation detail doesn't show:**
-| Operation | Array / object | Sub-fields the portal requires | How references fill them |
+| Operation | Array / object | Sub-fields the portal requires | How to fill them |
 |---|---|---|---|
-| SAP B1 `create_item` | `ItemPrices[]` | `PriceList`, `Price`, `Currency` | `PriceList: "1"`, `Price` from the source price, `Currency: "$$"` (SKU reference) |
-| D365 BC `create_salesorder` | `salesOrderLines[]` | `lineType`, `quantity`, `unitPrice`, `lineObjectNumber` | `lineType: "Item"`, others from the order lines (find-or-create reference) |
+| SAP B1 `create_item` | `ItemPrices[]` | `PriceList`, `Price`, `Currency` | `Price` from the source price. **`PriceList` and `Currency` are company-specific — ask the partner** (no SAP B1 action returns local currency or price lists; checked 2026-09-24). The SKU reference's `"1"` / `"$$"` were that customer's values — never copy them. |
+| D365 BC `create_salesorder` | `salesOrderLines[]` | `lineType`, `quantity`, `unitPrice`, `lineObjectNumber` | `lineType: "Item"` (standard), others from the order lines (find-or-create reference) |
 
-Add rows as new ones are found. For `Currency`, prefer a real source value
-(e.g. the price's currency code in the source payload) and fall back to the
-target's local-currency code only as a disclosed default.
+Add rows as new ones are found. Anything company-specific (currency, price
+list, warehouse, tax code, posting group) follows SKILL.md's rule: source
+field → run-time lookup action → ask the partner. Never a reference's value.
 
 **Common mandatory-field patterns (approach, not literal values):**
 - **Target record number/code required, source has a GID** → derive the
