@@ -1,115 +1,185 @@
-# workflow-creator — Think Like an Integration Expert (full)
+# workflow-creator — Expert Review: the real failures behind each rule
 
-*Moved verbatim from SKILL.md on 2026-09-24 so the core file stays short. Read before Step 9 on any build with a Filter, Decision, Splitter, lookup, or update — i.e. almost every build beyond a simple sync. SKILL.md holds the condensed rules; this file holds the full detail and examples.*
+*SKILL.md's "Think Like an Integration Expert" section is the single source of truth for the rules — they are not repeated here, so the files can't drift apart. This file holds the evidence: each review question paired with the real failure that created it, plus the worked checks to run. Read it before Step 9 on any build with a Filter, Decision, Splitter, lookup, or update — i.e. almost every build beyond a simple sync. If this file and SKILL.md ever disagree, SKILL.md wins — fix this file to match.*
 
-## Think Like an Integration Expert
+## How to use this file
 
-You are a senior integration consultant, not a form-filler. The partner
-describes a business outcome; you design the workflow that achieves it
-**safely in production**. Reference workflows and Building Blocks show what
-the platform can do — use them as a starting point, then apply your own
-judgement to this scenario. A reference that worked for one app pair is not
-proof it's right for this one, and a scenario with no reference is not a
-reason to hold back.
+Before Step 9, walk the designed flow node by node. For each question below,
+check your design against the failure it describes. Fix what you find in the
+design, list each fix under "Safety checks I added", and turn anything that
+changes what the partner asked for into a "must ask" question.
 
-**Follow the data flow — every node reads from the node that just shaped the
-record.** Records move through the workflow one step at a time; each Filter,
-Decision, or lookup changes *which* records continue. So a node must take its
-input from the step directly before it (`$payload`), or from a named earlier
-node **on the same path that still carries the current record** — never
-jump back past a Filter or Decision to the trigger:
-- The node directly after a Filter (or the trigger) reads the record with
-  `$payload.…` — never `$('<trigger>')`. Reaching back to the trigger
-  bypasses the Filter, and here it came through **empty**.
-- After a lookup, fields about the *found record* come from the lookup
-  (`$payload.…` or `$('<lookup node>').payload.…`); fields about the
-  *source record* come from the closest earlier node that still carries it
-  on this path — when a Filter is in the path, that's the Filter by name,
-  not the trigger. See `references/conventions.md` for exactly what's
-  confirmed.
-- **Every `$('<name>')` must be the exact `current_name` of a node in *this*
-  workflow.** Node names in reference files (`'Splitter'`, `'Shopify'`,
-  `'SAP Business One 2'`) belong to those workflows — never copy them. If
-  you name the Splitter "Split Variants", every reference to it is
-  `$('Split Variants')`. A reference to a name that doesn't exist resolves
-  to nothing, and the field goes out blank.
-- In Step 10, open each node's mapping and ask: "does this expression read
-  the record that actually reached this node?" If the answer is "it reads
-  the trigger from three steps back", fix it.
+---
 
-(Real failure, 2026-09-24, Workflow 15: the Splitter was named "Split
-Variants", but the Filter and the Create Item node referenced
-`$('Splitter')`, copied from the SKU reference — so ItemCode, ItemName, and
-Price pointed at a node that doesn't exist. They also skipped past the
-"Has SKU" Filter, which is the node carrying each variant at that point.)
+## 1. Is every node reading the record that actually reached it?
 
-(Real failure, 2026-09-24: a search mapped the email from the trigger
-instead of from the "skip if no email" Filter right before it. The value
-came through blank, and Business Central returned all ~1,300 customers for
-each of 40 Shopify customers — 53,080 records into a Decision feeding an
-update.)
+**Real failure — the 53,080-record incident (Workflow 12, 2026-09-24,
+Shopify → Business Central create-or-update customers).** It was built
+straight from the reference pattern, without this review. A "skip if no
+email" Filter sat before the customer search, but the search read the email
+from the trigger (`$('Shopify')…`) instead of `$payload`. That bypassed the
+Filter, the email came through blank, and Business Central returned all
+~1,300 customers for each of 40 Shopify customers — 53,080 records into a
+Decision that compared blank with blank, called it a match, and fed the
+update branch. It would have overwritten ~1,300 unrelated customers per run.
 
-**Decide the unit of processing — do you need a Splitter?** Work out, for each
-step, whether it should act once per *record* or once per *element of a list
-inside the record*. Decide this yourself from the data shape; don't default
-either way:
-- **Top-level records from the trigger** (each customer, each order) are
-  already processed one at a time by the platform — the trigger's `limit`
-  batch is iterated per record. Evidence: lookups straight after a trigger
-  ran once per record in live runs (10 calls for 10 customers; 40 for 40),
-  and every reference workflow relies on this without a Splitter. **No
-  Splitter for "each customer / each order".**
-- **A nested list inside each record** (an order's line items, a product's
-  variants, a customer's addresses) needs a `SplitterNode` **only when each
-  element must go through its own step** — its own lookup, Decision, or
-  create (e.g. check each line's SKU exists in the ERP, create missing
-  items).
-- **No Splitter when the target takes the whole list in one call** — e.g. a
-  sales-order create whose lines field accepts an array; map it with a
-  projection (`lineItems.nodes[].sku`) instead.
-- When you do use one, build it the way the confirmed reference does (see
-  `references/conventions.md`), and state in Step 9 which list is being
-  split and why.
+**Real failure — Splitter read from past a Filter (Workflows 15–18).**
+Trigger → Split Variants → Has SKU → … → Create Item, with Create Item
+reading `$('Split Variants')`. The Has SKU Filter had removed records after
+the Splitter, so the Splitter's records no longer lined up with what reached
+Create Item — its first record could be a variant with no SKU, giving
+`null`.
 
-**Design, then attack your own design.** Before Step 9, walk the flow node by
-node and ask what a real integration expert would ask:
-- **Is every node reading the right record?** (See data flow above.)
-- **What if this value is empty or missing?** Any key used to find, match,
-  or target a record — email, order number, SKU, external ID — can arrive
-  blank. What happens downstream if it does? (An empty search filter often
-  means "return everything".)
-- **Does this lookup really prove a match?** "Something came back" is not
-  the same as "the right record came back". Check the returned key actually
-  equals the source key — and that neither side is blank.
-- **What's the most records this write can touch in one run?** If the
-  honest answer is "however many a search returns", the design is unsafe.
-  Updates and deletes should only ever hit a record you've verified.
-- **What data will the first run pick up?** A trigger start date in the past
-  processes every old record since then. New workflows normally start from
-  now; a backfill is a deliberate choice the partner makes.
-- **Could this overwrite good data with bad?** A blank optional field on an
-  update can wipe a value the target already holds.
-- **Could this loop or duplicate?** If a sync also runs the other way, or
-  the target may already hold the record, how does this flow avoid
-  re-processing its own writes or creating a second copy?
-- **What does this app's API actually do?** Check the operation details and
-  docs rather than assuming another app's behaviour carries over (e.g.
-  whether an update replaces a whole array or targets rows by ID).
+**Check:** for every `$('X')` in every node, trace the path from X to that
+node. If any Filter sits in between, X is wrong — use the last Filter before
+the node. The node directly after a Filter or the trigger uses `$payload`.
 
-**Fix what you find, in the design, without being asked** — a Filter to stop
-records with an unusable key, a stricter Decision condition, a narrower
-update, a start date of now. These are part of building it properly, not
-extra scope, and don't need the partner's permission. Then explain each one
-in Step 9 under **"Safety checks I added"**, in plain business language.
-If a safeguard would change what the partner asked for (e.g. skipping
-records they expected to sync), say so and let them decide.
+---
 
-**A real example of why this matters:** on 2026-09-24 a Shopify → Business
-Central create-or-update customer workflow was built straight from the
-pattern, without this review. The email it searched on came through empty,
-the search returned a page of *all* customers, the Decision compared blank
-with blank and called it a match, and the update branch overwrote ~1,300
-unrelated customers per run. Every question above would have caught it.
+## 2. Does every `$('<name>')` match a node in *this* workflow?
 
-In Step 11, suggest a first test with a single new record, and say what the
-partner should see if it's working.
+**Real failure (Workflow 15).** The Splitter was named "Split Variants", but
+the Filter and Create Item referenced `$('Splitter')` — copied from the SKU
+reference file. ItemCode, ItemName, and Price pointed at a node that doesn't
+exist, so they resolved to nothing.
+
+**Check:** list every node's `current_name`, then check each `$('…')`
+against the list. Never copy a name from a reference file (`'Splitter'`,
+`'Shopify'`, `'SAP Business One 2'` belong to those workflows).
+
+---
+
+## 3. What if a match key is empty or missing?
+
+**Real failure:** the 53,080-record incident above — an empty search filter
+meant "return everything".
+
+**Known instance in a reference:** `pattern-find-or-create-customer-then-order.json`
+searches by customer email with no blank-email guard — same failure class.
+`pattern-dedupe-create-or-update-product.json` has no blank-SKU guard.
+
+**Check:** every key used to find, match, or target a record (email, SKU,
+order number, external ID) needs a Filter using `is_not_empty` (preferred
+over `exist`) before the lookup. Orders with no customer at all (guest
+checkout) should be stopped by the same guard — state in Assumptions that
+they're skipped.
+
+---
+
+## 4. Does the lookup really prove a match?
+
+**Real failure:** in the 53,080 incident, the Decision treated "something
+came back" as a match — and blank equalled blank.
+
+**Check:** the Decision compares the returned key with the source key
+(`equal`), **and** neither side can be blank (guaranteed by the Filter in
+check 3). "The search returned a record" is not proof it's the right one.
+
+---
+
+## 5. How many records can this write touch in one run?
+
+**Real failure:** the 53,080 incident — an update fed by an unguarded
+search could touch every customer in the system.
+
+**Check:** if the honest answer is "however many the search returns", the
+design is unsafe. Updates and deletes should only ever hit a record you've
+verified in checks 3 and 4.
+
+---
+
+## 6. What will the first run pick up?
+
+**Seen in references:** `pattern-dedupe-create-or-update-product.json` has a
+trigger start date months in the past (2026-02-19) — a new build copied
+from it would reprocess every item changed since then.
+
+**Check:** new workflows start from now. A backfill is a "must ask"
+decision for the partner, never a default.
+
+---
+
+## 7. Could this overwrite good data with bad?
+
+**Seen in a reference:** the product update re-sends `status: "1"` and
+`visibility: "4"` — it would re-enable a product someone deliberately
+disabled in the store.
+
+**Check:** on updates, leave out fields the target's own team manages, and
+never send a blank optional field (it can wipe an existing value). If the
+partner wants those fields synced, that's a "must ask".
+
+---
+
+## 8. Does everything this record points to exist in the target?
+
+**Seen in a reference:** `pattern-find-or-create-customer-then-order.json`
+checks the customer exists, but not that each order line's product does.
+A missing item would make the target reject the whole order.
+
+**Check:** a parent check (customer) doesn't prove the children (products,
+warehouses) exist. Either add an item check per line (Splitter → lookup →
+Filter → create, per the SKU reference) or state it in Assumptions with
+what happens if it's wrong.
+
+---
+
+## 9. Could this loop or duplicate?
+
+**Check:** if a sync also runs the other way, or the target may already
+hold the record, how does this flow avoid re-processing its own writes or
+creating a second copy? A duplicate check (SKILL.md Step 3) and a verified
+match (check 4) cover most cases; a two-way sync needs a deliberate rule,
+which is a "must ask".
+
+---
+
+## 10. Does the value's type and code match what the target expects?
+
+**Real failure (Workflow 18).** SAP B1 rejected items with
+`Currency: "USD"` — "BadRequest request body data is invalid" — because
+that company's dollar code is `"$"`. Numeric fields sent as text are a
+related risk (Shopify sends prices as `"100.00"`).
+
+**Check:** numbers go out through `to_number()`; codes (currency,
+warehouse, tax code, price list) must be ones actually defined in the
+target — check a real record in the docs, and ask the partner for the exact
+code if it's company-specific.
+
+---
+
+## 11. Do you need a Splitter at all?
+
+**Evidence (Workflows 11 and 12):** lookups straight after a trigger ran
+once per record — 10 calls for 10 customers, 40 for 40 — with no Splitter.
+Every reference workflow relies on this.
+
+**Real config (Workflow 13):** a Splitter needs `fields_to_split` (e.g.
+`"variants.nodes"`) and `include` (e.g. `"no_other_fields"`) set on `data`
+— the older reference file saved it with empty `properties`, which hid
+this.
+
+**Check:** no Splitter for top-level records (each customer, each order).
+Use one only for a list inside each record whose elements each need their
+own lookup or create; set both config fields and say in Step 9 which list is
+split and why.
+
+---
+
+## 12. What does this app's API actually do?
+
+**Seen in references:** SAP B1 updates nested addresses by row ID
+(`BPAddresses[idx].RowNum`), while Magento2's customer update replaces the
+whole array. Copying one app's approach to the other would either duplicate
+sub-records or wipe them.
+
+**Check:** confirm each app's behaviour from its operation details and docs
+rather than assuming another app's behaviour carries over.
+
+---
+
+## After saving (Step 10)
+
+Re-run checks 1 and 2 against the saved workflow — they're the ones that
+failed most often in live builds. Then suggest a first test with a single
+new record, and tell the partner what they should see if it's working.

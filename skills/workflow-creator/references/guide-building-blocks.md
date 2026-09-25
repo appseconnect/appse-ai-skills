@@ -1,37 +1,53 @@
 # workflow-creator — Building Blocks, Reference Patterns & Docs
 
-*Moved verbatim from SKILL.md on 2026-09-24 so the core file stays short. Read when composing a workflow shape (Step 0b / Step 8), picking a reference, or when a docs lookup behaves unexpectedly. SKILL.md holds the condensed rules; this file holds the full detail and examples.*
+*Read when composing a workflow shape (Step 0b / Step 8), picking a reference, or when a docs lookup behaves unexpectedly. SKILL.md holds the condensed rules and is the source of truth; this file holds the full detail and examples. If this file and SKILL.md ever disagree, SKILL.md wins — fix this file to match.*
 
 ## Documentation Reference (appse-ai-docs via Context7)
 
-APPSeCONNECT's official docs repo (`appseconnect/appse-ai-docs`) contains
-real, versioned documentation useful for this skill, reachable via the
-Context7 MCP tools (see Allowed Tools — Documentation Access below):
+The platform's official docs are available through Context7, library
+**`/appseconnect/appse-ai-docs`**. Call `query-docs` **directly with that
+library ID** — no library lookup step is needed, and the partner doesn't
+need to set anything up.
 
-- `docs/app_integrations/{app}.md` — per-operation Configuration Fields and a
-  **worked example Result JSON** for most trigger/action operations. Use as a
-  **first-pass source** in Step 6, before or alongside the live
-  `get_operation_detail` call — never as a full replacement for it.
-- `docs/platform/key_concepts/expressions_mapping/` — the actual field-
-  reference expression syntax, confirmed correct (see Step 7).
+**What the docs cover** (all in scope):
+- `docs/app_integrations/{app}.md` — per-operation Configuration Fields and
+  a **worked example Result JSON** for most triggers and actions. First-pass
+  source in Step 6, alongside the live `get_operation_detail` call — never a
+  replacement for it.
+- `docs/platform/key_concepts/expressions_mapping/` — the field-reference
+  expression syntax and functions (Step 7).
+- `docs/platform/key_concepts/nodes/` — built-in node pages (decision,
+  filter, JSON converter, splitter and others): what each node does, its
+  settings, and its condition operators.
 
-Context7 covers **field-level, per-app documentation** — it does not cover
-generic node-type structure (Decision, Filter, Splitter, JsonConverter).
-For that, see Reference Patterns below.
+**Query by need, not by file.** Short, specific queries driven by the
+scenario, one per distinct need:
 
-**Known discrepancy — treat docs as a cross-check, not ground truth:** for
-SAP Business One's `Create New Business Partner`, live `get_operation_detail`
-reported `CardType` as required; the docs page does not mention it at all.
-When docs and the live MCP result disagree, **the live result governs** what
-the skill treats as required — use docs for realistic field naming and
-example shape, not as the final word on what's mandatory.
+| You need | Example query |
+|---|---|
+| An app's trigger/action fields and a real example record | "Magento2 create customer required fields and example" |
+| Expression syntax or a function | "expression to_number", "reference a field from a named earlier node" |
+| A node's behaviour, settings, or operators | "decision node operators", "filter node is_not_empty", "splitter node configuration" |
 
-**If Context7 is unavailable or a lookup fails:** do not stall or retry
-repeatedly. Fall back to `get_operation_detail` alone (which already governs
-on conflict), and in the Step 9 summary, mark every affected field mapping as
-**"not cross-checked against documentation"** (plain language, per Tone —
-not "not cross-checked against Context7") rather than presenting it with the
-same confidence as a docs-confirmed one.
+**Who decides what:**
+- **Docs** — what a node, operator, or function does, and realistic field
+  names and nesting.
+- **Live `get_operation_detail`** — which fields are required. When docs
+  and the live call disagree, the live call governs (e.g. SAP B1 `CardType`
+  is required live but missing from the docs).
+- **`conventions.md` and the reference files** — the exact JSON the save
+  call needs. The docs describe the portal, not the saved JSON.
+
+**A node type the docs describe but `conventions.md` has no confirmed JSON
+for** (e.g. agent, XML-to-JSON, Base64 decode): don't build it from the docs
+alone — its saved shape is unconfirmed. Offer the closest confirmed
+alternative, or ask.
+
+**If Context7 is unavailable or a lookup fails:** don't stall or retry
+repeatedly. Fall back to `get_operation_detail` alone, and in the Step 9
+summary mark every affected field mapping as **"not cross-checked against
+documentation"** (plain language, per Tone — not "not cross-checked against
+Context7").
 
 ---
 
@@ -54,7 +70,9 @@ combined; they are not a whitelist of allowed shapes.
 | `SplitterNode` | Fans out a nested list inside each record for per-element processing — build it like the confirmed reference (see `references/conventions.md`) | `default` |
 
 Node-level fields, edge fields, and the `advance_filter` condition shape are
-documented in `references/conventions.md` — copy those shapes exactly.
+documented in `references/conventions.md` — copy those shapes exactly. For
+what a node does or which operators it supports, query the node docs (see
+Documentation Reference above).
 
 ### Turning business rules into blocks
 Read the partner's scenario sentence by sentence and map each rule:
@@ -75,6 +93,14 @@ Read the partner's scenario sentence by sentence and map each rule:
 Rules the scenario doesn't state don't get a block — don't add lookups,
 branches, or notifications nobody asked for.
 
+**A parent-lookup pattern and a per-line-item pattern are independent —
+check both, don't assume one covers the other.** An order-sync scenario
+often needs *both* "does the customer exist?" (find-or-create-parent) *and*
+"does each line's product exist?" (item reconciliation, per line item via a
+Splitter). Confirming the customer exists says nothing about whether the
+order's individual products exist in the target system — treat these as two
+separate checks to design in, not one problem solved by the other.
+
 ### When the composed shape has no matching reference
 Build it from the blocks above, then:
 - In Step 9, say plainly that this shape was assembled for their scenario
@@ -83,7 +109,9 @@ Build it from the blocks above, then:
 - In Step 11, suggest they give it a quick test run in the portal before
   switching it on.
 
-The only genuine blocker is a node type not listed above — for that, ask.
+The only genuine blocker is a node type with no confirmed JSON shape (not in
+the table above or `conventions.md`) — for that, ask. The node docs can
+explain what an unfamiliar node does, but not how to save it.
 An unfamiliar *combination* of known blocks is not a blocker. (A
 `SplitterNode` is buildable from the reference, but which list it splits
 isn't visible in its saved config — so when you use one, tell the partner in
@@ -113,24 +141,20 @@ apply the Think Like an Integration Expert review on top, and fix or leave
 out anything that isn't. If your judgement and a reference disagree, go with
 the safer, better-reasoned design and say why in Step 9.
 
-### Simple sync (one trigger, one action, no branching)
-Live reference, fetched via `get_workflow` (see Allowed Tools):
+**The envelope shape itself (nodes, edges, how a node ties to an
+app/operation) is fully covered by the local reference files and
+`conventions.md` below — no live workflow fetch is needed for any pattern,
+including a plain one-trigger/one-action sync.**
 
-| Field | Value |
-|---|---|
-| Name | Shopify Customer synced to SAP SL |
-| ID | `a0e88805-6d64-4110-b5e7-42bf93c3d74d` |
-| URL | https://workflow.insync.top/workflows/a0e88805-6d64-4110-b5e7-42bf93c3d74d/editor |
-
-### Branching patterns (local files, in `references/` alongside this file)
-Read the local file directly — no MCP call needed for these:
+### Reference files (local, in `references/` alongside this file)
+Read the local file directly — no MCP call needed:
 
 | File | Pattern | Use when |
 |---|---|---|
 | `references/pattern-dedupe-skip-return-request.json` | Search for a match on a stable key → if found, stop (no edge on the "exists" branch) | The user wants "don't create duplicates," with no update requirement |
 | `references/pattern-dedupe-create-or-update-customer.json` and `references/pattern-dedupe-create-or-update-businesspartner-subrecords.json` | Search for a match → `DecisionNode`, **both branches wired**: create if not found, update if found | Two independent confirmed examples, different app pairs. Use the `-subrecords` file specifically when the update touches a nested array field (e.g. addresses) — it shows how to preserve the original record's row identifier so the update doesn't duplicate the sub-record. |
-| `references/pattern-dedupe-create-or-update-product.json` | ERP item → search store product by SKU → `DecisionNode`: update if found, create if not | Product master data flowing from the ERP to the store (the usual direction) — shows the store's product object shape and SKU-based matching |
-| `references/pattern-find-or-create-customer-then-order.json` | Search for a parent record → `DecisionNode`: if found, create the child using the found parent's key; if not found, create the parent **then** the child in sequence | The child record (e.g. a sales order) can't be created without a parent (e.g. a customer) that may not exist yet — and the "found" branch should reuse the parent, not update it |
+| `references/pattern-dedupe-create-or-update-product.json` | ERP item → search store product by SKU → `DecisionNode`: update if found, create if not | Product master data flowing from the ERP to the store (the usual direction) — shows the store's product object shape and SKU-based matching. **Has a flaw — see conventions.md before using: `attribute_set_id` is hardcoded, but it's a store-specific catalog ID, not a universal constant.** |
+| `references/pattern-find-or-create-customer-then-order.json` | Search for a parent record → `DecisionNode`: if found, create the child using the found parent's key; if not found, create the parent **then** the child in sequence | The child record (e.g. a sales order) can't be created without a parent (e.g. a customer) that may not exist yet — and the "found" branch should reuse the parent, not update it. **Has a flaw — see conventions.md before using: no guard against a blank source email.** |
 | `references/pattern-sku-reconciliation-and-multibranch-order.json` | `SplitterNode` fans out line items → per-item existence check → create if missing | The workflow involves reconciling a list of sub-records (e.g. order line items against an item master) — **use only the SplitterNode → Get Item → Filter → Create Item portion of this file; the AI-node (`get_chat_completions`) reconciliation portion in this same file is not an approved pattern, see below** |
 | `references/pattern-parallel-branch-inventory-notification.json` | Multiple independent branches fan out directly from one trigger (not sequential) | The business process needs more than one independent thing to happen off the same event (e.g. update a record AND separately notify on a condition) |
 

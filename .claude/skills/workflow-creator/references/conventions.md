@@ -114,6 +114,9 @@ without a parent (customer, business partner) that may not exist yet. This
 differs from create-or-update: the "found" branch does not update the
 parent, it just reuses it.
 
+**No guard on a blank source email — same class as Workflow 12. Expert
+review must add a Filter before the customer search.**
+
 **Corrected from the original export (2026-09-24), not unmodified:**
 
 - The `true`-branch order line's `unitPrice` pointed at the order-level

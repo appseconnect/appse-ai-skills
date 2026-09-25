@@ -16,7 +16,6 @@ description: >
   each run — none are hardcoded. Works straight from a plain scenario or
   requirements brief (e.g. "When X happens in App A, do Y in App B … Build
   it in <org>") — no Discovery Summary or SOW is needed first.
-effort: medium
 ---
 
 # workflow-creator — Build Two-App Sync Workflow(s)
@@ -27,12 +26,18 @@ matching record in a target app. Source app, target app, and entity type
 
 **Start from whatever the partner gives you.** A one-line request, a
 scenario brief, customer requirements, call notes — all are valid input.
-A Discovery Summary or SOW is **not** a prerequisite: don't ask for one or
-route the partner to another skill first. If they do provide one, use it as
-extra context (e.g. its [Inferred] facts become proposed mappings or
-questions). Gaps in a brief are handled by this skill's own steps — Step 6's
-mapping ladder, the expert review, and Step 9's summary — not by sending the
-partner elsewhere.
+A Discovery Summary or SOW is **not** a prerequisite: never ask for one or
+route the partner elsewhere first. If they do provide one, use it as extra
+context (e.g. its [Inferred] facts become proposed mappings or questions).
+Gaps in a brief are handled by this skill's own steps — Step 6's mapping
+ladder, the expert review, and Step 9's summary.
+
+**Only for a large or vague request** — many systems, a whole project, or
+rules too unclear to map to workflows — offer **once**, as an option, to
+draft a short scope summary before building ("This covers a lot — would you
+like a short scope summary first, or shall I go straight to the workflow
+plan?"). If they say go ahead, go straight to Step 0. Never require it,
+and never name other tools or skills when offering it.
 
 **Each workflow maps to exactly one triggering business event — never more,
 never less.** Workflows are drawn from the partner's paid allocation, so how
@@ -48,12 +53,12 @@ needs them, and ask every open question in one round inside Step 9.
   Step 8. Open a `pattern-*.json` or `guide-*.md` only when a specific detail
   you need isn't in this file or `conventions.md` — never "to be safe".
 - **Don't re-call a tool** whose result you already have in this session
-  (org, apps, credentials, operations, field details) unless something has
-  changed (e.g. the partner just added a connection).
+  (org, apps, credentials, operations, field details, a docs answer) unless
+  something has changed (e.g. the partner just added a connection).
 - **Decide routine choices quickly.** When there's an obvious sensible
   default (a standard constant, the single matching operation, the usual
   node shape), take it and list it under "Mappings I worked out" or the
-  Step 9 questions — don't deliberate over it. Spend thinking time on the
+  Step 9 assumptions — don't deliberate over it. Spend thinking time on the
   expert review, not on the obvious.
 
 ## Where the detail lives (read only when needed)
@@ -64,7 +69,7 @@ needs them, and ask every open question in one round inside Step 9.
 | `guide-expert-review.md` | Before Step 9 on anything beyond a simple one-trigger/one-action sync — the full review with the real failures behind it |
 | `guide-building-blocks.md` | Composing a shape, choosing a reference pattern, or a docs lookup acting oddly |
 | `pattern-*.json` | Only if `conventions.md` doesn't show a detail you need for that exact pattern — read one, not all |
-| `guide-steps-detail.md` | A condensed rule in this file isn't enough to decide |
+| `guide-steps-detail.md` | Full wording for Tone, Asking Questions, and Output Rules, when a condensed rule here isn't enough |
 | `known-limits.md` | Maintainer notes — not needed during a normal build |
 
 ---
@@ -88,11 +93,22 @@ needs them, and ask every open question in one round inside Step 9.
 
 ## Asking Questions
 *(Full wording: `guide-steps-detail.md`.)*
-- **Default: one round.** Collect every open question from Steps 1–8 — which
-  org (only if more than one), an existing matching workflow, an ambiguous
-  operation, company-specific settings, anything no source resolves — and
-  ask them **together, once, inside the Step 9 message**, as one numbered
-  list with your recommended answer for each.
+
+**Goal: a workflow that's right for real-world use, reached in one round of
+questions the partner can answer in a single reply.** Sort every open point
+from Steps 1–8 into one of three buckets:
+
+| Bucket | What goes in it | How it's handled |
+|---|---|---|
+| **Decide yourself** | Technical safety and correctness — a Filter on a blank key, start from now, a stricter match, `to_number()` on a numeric field | Just do it; list it under "Safety checks I added" |
+| **Assume and state** | A sensible default where being wrong is low-risk and easy to fix later — a standard constant, the single obvious operation, an optional field left out | Use it; list it under "Assumptions I'm making" with what happens if it's wrong |
+| **Must ask** | Anything you can't find out and that's costly or hard to undo if wrong — company-specific codes (currency, price list, warehouse, tax code), overwriting existing data, a backfill of old records, skipping records the partner may expect to sync, which of several very different operations to use | A numbered question in Step 9, with your recommended answer |
+
+- **Every question carries a recommended answer**, so "go ahead" settles
+  everything in one reply.
+- **Aim for five questions or fewer, ranked by risk.** If you have more,
+  move the lowest-risk ones into Assumptions — never drop a "must ask" just
+  to hit the number.
 - **Ask earlier, on its own, only when the answer changes what you'd look up
   or build next** — a missing connection (the build can't happen without
   it), a choice between very different operations, or which workflows of a
@@ -108,22 +124,51 @@ needs them, and ask every open question in one round inside Step 9.
 
 ---
 
-## Documentation and Building Blocks (summary — full text in `references/guide-building-blocks.md`)
+## Documentation (appse-ai-docs via Context7)
 
-- **Docs:** `appseconnect/appse-ai-docs` via Context7 —
-  `docs/app_integrations/{app}.md` (fields and example results, first-pass
-  in Step 6) and `docs/platform/key_concepts/expressions_mapping/` (syntax,
-  Step 7). The live `get_operation_detail` governs what's required when they
-  disagree (e.g. SAP B1 `CardType`). If docs are unavailable, don't stall —
-  mark affected mappings "not cross-checked against documentation".
-- **Building blocks:** `AppTriggerNode` (one per workflow), `AppNode`,
+The platform's official docs are available through Context7, library
+**`/appseconnect/appse-ai-docs`**. Call `query-docs` **directly with that
+library ID** — no library lookup step is needed, and the partner doesn't
+need to set anything up.
+
+**Query by need, not by file.** Write short, specific queries driven by the
+scenario, and only for what the build actually uses:
+
+| You need | Example query |
+|---|---|
+| An app's trigger/action fields and a real example record | "Magento2 create customer required fields and example" |
+| Expression syntax or a function | "expression to_number", "expression substringAfter", "reference a field from a named earlier node" |
+| A node's behaviour and settings | "decision node operators", "filter node is_not_empty", "splitter node configuration" |
+
+Run the docs queries in the same parallel batch as the live calls they
+support (Steps 4–6). Ask one query per distinct need; don't repeat a query
+whose answer you already have.
+
+**Who decides what:**
+- **Docs** — what a node, operator, or function does, and realistic field
+  names and nesting (e.g. Shopify `defaultEmailAddress.emailAddress`).
+- **Live `get_operation_detail`** — which fields are required. When docs
+  and the live call disagree, the live call governs (e.g. SAP B1 `CardType`
+  is required live but missing from the docs).
+- **`conventions.md` and the reference files** — the exact JSON the save
+  call needs. Docs describe the portal, not the saved JSON.
+
+**A node type the docs describe but `conventions.md` has no confirmed JSON
+for** (e.g. agent, XML-to-JSON, Base64 decode): don't build it from the docs
+alone — its saved shape is unconfirmed. Offer the closest confirmed
+alternative, or ask. **If docs are unavailable,** don't stall — use the live
+detail and mark affected mappings "not cross-checked against
+documentation".
+
+## Building Blocks (summary — full text in `references/guide-building-blocks.md`)
+- **Confirmed blocks:** `AppTriggerNode` (one per workflow), `AppNode`,
   `DecisionNode` (`true`/`false`), `FilterNode`, `JsonConverterNode`,
   `SplitterNode`. Map each rule in the scenario to blocks (the rule→block
   table is in the guide); add no blocks for rules nobody stated.
 - **Most scenarios have no matching reference — that's normal, never a
   reason to stop.** Compose from blocks, call it a custom flow in Step 9 and
-  walk through it in plain steps. The only blocker is a node type that
-  doesn't exist.
+  walk through it in plain steps. The only blocker is a node type with no
+  confirmed JSON shape.
 
 ---
 
@@ -215,6 +260,9 @@ node and ask what a real integration expert would ask:
 - **Could this loop or duplicate?** If a sync also runs the other way, or
   the target may already hold the record, how does this flow avoid
   re-processing its own writes or creating a second copy?
+- **Does everything this record points to exist in the target?** E.g. an
+  order's customer *and* each line's product. A parent check doesn't prove
+  the children exist — check both, or state it as an assumption.
 - **What does this app's API actually do?** Check the operation details and
   docs rather than assuming another app's behaviour carries over (e.g.
   whether an update replaces a whole array or targets rows by ID).
@@ -225,7 +273,7 @@ update, a start date of now. These are part of building it properly, not
 extra scope, and don't need the partner's permission. Then explain each one
 in Step 9 under **"Safety checks I added"**, in plain business language.
 If a safeguard would change what the partner asked for (e.g. skipping
-records they expected to sync), say so and let them decide. (The real
+records they expected to sync), make it a "must ask" question. (The real
 failures behind each question are in `references/guide-expert-review.md`.)
 
 In Step 11, suggest a first test with a single new record, and say what the
@@ -256,12 +304,17 @@ apply the Think Like an Integration Expert review on top, and fix or leave
 out anything that isn't. If your judgement and a reference disagree, go with
 the safer, better-reasoned design and say why in Step 9.
 
+**The envelope shape itself (nodes, edges, how a node ties to an
+app/operation) is fully covered by `conventions.md` and the reference files
+below — no live workflow fetch is needed for any pattern, including a plain
+one-trigger/one-action sync.**
+
 | Pattern | File | Use when |
 |---|---|---|
-| Simple sync | live workflow `a0e88805-6d64-4110-b5e7-42bf93c3d74d` (`get_workflow`) — usually not needed; `conventions.md` covers the envelope | One trigger, one action, no branching |
+| Simple sync | No dedicated file — `conventions.md`'s node/edge envelope covers it | One trigger, one action, no branching |
 | Dedupe-and-skip | `pattern-dedupe-skip-return-request.json` | "Don't create duplicates", no update |
-| Create-or-update | `pattern-dedupe-create-or-update-customer.json`, `-businesspartner-subrecords.json` (nested arrays with row IDs), `-product.json` (ERP → store products) | Update if found, create if not |
-| Find-or-create parent, then child | `pattern-find-or-create-customer-then-order.json` | Child (order) needs a parent (customer) that may not exist |
+| Create-or-update | `pattern-dedupe-create-or-update-customer.json`, `-businesspartner-subrecords.json` (nested arrays with row IDs), `-product.json` (ERP → store products — see `conventions.md` for its flaws, incl. store-specific `attribute_set_id`) | Update if found, create if not |
+| Find-or-create parent, then child | `pattern-find-or-create-customer-then-order.json` (see `conventions.md`: no guard against a blank source email) | Child (order) needs a parent (customer) that may not exist |
 | Item reconciliation with a Splitter | `pattern-sku-reconciliation-and-multibranch-order.json` (Splitter → lookup → Filter → create portion only) | Each element of a list inside a record needs its own check/create |
 | Parallel branches | `pattern-parallel-branch-inventory-notification.json` | Several independent actions off one trigger |
 
@@ -338,22 +391,26 @@ Call `list_organizations`, `list_apps`, `list_credentials`, and
   app, target app, and entity → add "reuse/edit it, or create a new one?" to
   the Step 9 questions. Never duplicate silently.
 
-### Steps 4–5 — Batch 2: operations (in parallel)
+### Steps 4–5 — Batch 2: operations and node docs (in parallel)
 Call `list_operations` for every app involved — the trigger, the action,
-and any lookup the shape needs — **plus** `resolve-library-id` for
-`appseconnect/appse-ai-docs`, all in one parallel batch. If the entity's
-plain name finds nothing, try the app's own terms (SAP B1 calls products
-"Items"). If several operations are plausible, pick the best fit and add it
-to the Step 9 questions — unless the choice changes the design or which
-fields you'd check, in which case ask it first, on its own (don't guess the
-right identity from naming alone). `release` and `preview` stages are fine
-with no extra confirmation; **never use a `dev`-stage operation** — if
-that's the only match, stop and say so.
+and any lookup the shape needs — **plus** `query-docs` on
+`/appseconnect/appse-ai-docs` for any node the planned shape uses beyond a
+plain trigger and action (e.g. "decision node operators", "splitter node
+configuration"), all in one parallel batch. If the entity's plain name finds
+nothing, try the app's own terms (SAP B1 calls products "Items"). If several
+operations are plausible, pick the best fit and add it to the Step 9
+questions — unless the choice changes the design or which fields you'd
+check, in which case ask it first, on its own (don't guess the right
+identity from naming alone). `release` and `preview` stages are fine with
+no extra confirmation; **never use a `dev`-stage operation** — if that's
+the only match, stop and say so.
 
 ### Step 6 — Batch 3: field requirements and mapping (in parallel)
 Call `get_operation_detail` for **every** chosen operation **and**
-`query-docs` (`docs/app_integrations/{app}.md`) for the same apps, all in
-one parallel batch. Docs show real field names and nesting (e.g. Shopify
+`query-docs` on `/appseconnect/appse-ai-docs` with a targeted query per app
+operation (e.g. "Shopify new customers created trigger fields and example",
+"SAP Business One create business partner required fields"), all in one
+parallel batch. Docs show real field names and nesting (e.g. Shopify
 `defaultEmailAddress.emailAddress`, not `email`); **the live detail governs
 what's required** when they disagree. Docs unavailable → don't stall; mark
 those mappings "not cross-checked against documentation".
@@ -365,8 +422,9 @@ those mappings "not cross-checked against documentation".
   so in Step 9.
 - **Mapping ladder — use the first rung that gives a sensible value:**
   1. Direct source field (confirmed by docs or the live detail).
-  2. Derived with a confirmed expression function (`conventions.md`) — e.g.
-     strip a GID with `substringAfter`, join first + last name.
+  2. Derived with a confirmed expression function (`conventions.md`, or a
+     function the docs confirm) — e.g. strip a GID with `substringAfter`,
+     join first + last name.
   3. The *approach* a reference used for the same kind of field, re-derived
      for this payload — never its literal expression.
   4. A constant that's the same in every installation (e.g. `Person`,
@@ -402,15 +460,17 @@ those mappings "not cross-checked against documentation".
   group, tax/VAT code, posting group, number series, company, sales channel)
   are **never** copied from a reference or guessed: source field → a lookup
   action that fetches it at run time (check `list_operations`; add it as a
-  node) → add to the Step 9 questions with a short reason.
+  node) → a "must ask" question in Step 9 with a short reason.
 - Unresolved inner shape of an object/array, a field the connector requires
   but the partner wants auto-generated, or a required source that won't
   exist (e.g. media) → follow `guide-field-mapping.md`.
 
 ### Step 7 — Write Field Mappings Using the Correct Expression Syntax
-Field references use appse ai's documented expression syntax (check
-`docs/platform/key_concepts/expressions_mapping/` via `query-docs` if
-unsure), **not** `{{trigger.field}}`:
+Use appse ai's documented expression syntax — **not** `{{trigger.field}}`.
+If you need a function or form not listed in `conventions.md`, run one
+targeted `query-docs` on `/appseconnect/appse-ai-docs` for it (e.g.
+"expression date formatting", "expression default value when field is
+missing") rather than guessing a function name.
 - `{{ $payload.fieldName }}` — reference a field from the immediately
   preceding node
 - `{{ $('nodeName').payload.fieldName }}` — reference a field from a named
@@ -421,20 +481,21 @@ unsure), **not** `{{trigger.field}}`:
   support `[*]`, indexing, and filter expressions — only use these if the
   mapping genuinely needs them.
 
-For `DecisionNode`/`FilterNode` conditions specifically, see
-`references/conventions.md` for the confirmed `advance_filter` structure
-(operator type/operation, leftValue, rightValue) rather than inventing a
-condition shape.
+For `DecisionNode`/`FilterNode` conditions, use the confirmed
+`advance_filter` structure and operators in `references/conventions.md`
+(e.g. prefer `is_not_empty` over `exist` for match keys); check the node
+docs for any other operator before using it.
 
 ### Step 8 — Assemble the Flow
 Read `conventions.md` for the node/edge envelope, condition shapes, and
-Splitter config, and assemble the flow from building blocks. Read **one**
-`pattern-*.json` only if `conventions.md` doesn't show a detail you need for
-that exact pattern; fetch the live simple-sync reference only if you're
-unsure of the basic envelope. Apply structure only — never a reference's
-field values, credential IDs, node names, or app-specific mappings. A custom
-or mixed shape is fine — say so in Step 9; ask only if a needed node type
-doesn't exist.
+Splitter config, and assemble the flow from building blocks — this covers
+the plain one-trigger/one-action envelope too, so no live workflow fetch is
+needed for any pattern. Read **one** `pattern-*.json` only if
+`conventions.md` doesn't show a detail you need for that exact pattern.
+Apply structure only — never a reference's field values, credential IDs,
+node names, or app-specific mappings. A custom or mixed shape is fine — say
+so in Step 9; stop and ask only if a needed node type has no confirmed JSON
+shape.
 
 **Then review the design as an integration expert** (Think Like an
 Integration Expert; full version in `guide-expert-review.md` for anything
@@ -470,11 +531,12 @@ Tone guidance above):
 > - {every assumption the design relies on that the partner did **not**
 >   state — each with what happens if it's wrong, e.g. "All products on an
 >   order already exist in SAP — if one doesn't, SAP rejects that whole
->   order", "Each Shopify order has exactly one customer email", "Prices in
->   Shopify already include the right currency"}
+>   order", "Orders without a customer email (e.g. guest checkout) are
+>   skipped"}
 >
-> **Questions before I build:** {every open question from Steps 1–8, as
-> one numbered list — Q1 … Q2 … — each with your recommended answer}
+> **Questions before I build:** {only the "must ask" items — five or fewer,
+> highest risk first — as one numbered list, Q1 … Q2 …, each with your
+> recommended answer}
 >
 > If you'd like any of these mapped differently, tell me what to use and
 > I'll update it. Reply with your answers (e.g. "1: USD, 2: yes"), or "go
@@ -490,8 +552,8 @@ records it points to already exist (customers, items, warehouses), data is
 always present or in a certain format, there's only one match, the data
 direction and system of record, volumes, what happens to records outside
 the rules. Anything you can't confirm from the partner's words, the docs,
-or a live check is an assumption and goes in this list — never leave one
-silent. If an assumption is risky, turn it into a question instead.
+or a live check goes in Assumptions — never leave one silent. If being
+wrong would be costly or hard to undo, make it a question instead.
 
 ### Step 10 — Build and Save
 Call `create_workflow`, then `save_workflow` using the envelope structure
@@ -543,12 +605,13 @@ should come from somewhere else, tell me what to use and I'll update the
 workflow."_ If the partner then asks for a change, update this same workflow
 (read it with `get_workflow`, change only the named fields, `save_workflow`)
 rather than creating a new one. The partner's change request is the go-ahead
-— save without asking again, then confirm what changed. This is what the user checks against the appse ai
-UI once it's reachable — the build itself is safely persisted regardless of
-UI availability, so a UI outage delays verification, not the build's
-validity (state this plainly, without naming the database or any internal
-system). If this was one of several workflows from Step 0, also report
-progress against the full set (e.g. "2 of 4 built so far").
+— save without asking again, then confirm what changed. This is what the
+user checks against the appse ai UI once it's reachable — the build itself
+is safely persisted regardless of UI availability, so a UI outage delays
+verification, not the build's validity (state this plainly, without naming
+the database or any internal system). If this was one of several workflows
+from Step 0, also report progress against the full set (e.g. "2 of 4 built
+so far").
 
 If the platform assigns a generic default name (e.g. "Workflow 9") rather
 than the descriptive name intended, state this plainly and positively —
@@ -563,16 +626,17 @@ of what an internal tool does or doesn't support (see Tone).
 - **arise-mcp:** `list_organizations`, `list_apps`, `list_credentials`,
   `list_operations`, `get_operation_detail`, `list_workflows`,
   `create_workflow`, `save_workflow`, and `get_workflow` — **restricted to
-  exactly two targets:** (1) the live simple-sync reference workflow
-  `a0e88805-6d64-4110-b5e7-42bf93c3d74d`, structure only; (2) the workflow
-  this run created — to verify it (Step 10) and apply requested changes
-  (Step 11). Never any other workflow. No tool exposes remaining allocation,
-  a rename, or the envelope schema.
-- **Context7 (read-only, scoped):** `resolve-library-id` for
-  `appseconnect/appse-ai-docs` only; `query-docs` only under
-  `docs/app_integrations/{app}.md` and
-  `docs/platform/key_concepts/expressions_mapping/`. A separate grant from
-  arise-mcp — never use one to justify expanding the other.
+  exactly one target: the workflow this run created** — to verify it
+  (Step 10) and apply requested changes (Step 11). Never any other
+  workflow. No tool exposes remaining allocation, a rename, or the
+  envelope schema.
+- **Context7 (read-only, scoped):** `query-docs` with library ID
+  `/appseconnect/appse-ai-docs` only — no other library. Scope: app
+  integration pages (`docs/app_integrations/`), expressions
+  (`docs/platform/key_concepts/expressions_mapping/`), and node pages
+  (`docs/platform/key_concepts/nodes/`). No library lookup step is needed.
+  A separate grant from arise-mcp — never use one to justify expanding the
+  other.
 - **Local files:** this skill's own `references/` folder only — the
   `pattern-*.json` files, `conventions.md`, and the `guide-*.md` /
   `known-limits.md` notes. Never read or infer structure from anywhere else.
@@ -593,11 +657,15 @@ ideas, the hardcoded workflow-link base URL) live in
 *(Full wording: `guide-steps-detail.md`.)*
 - **Scope:** one workflow per business event; present a plan (pattern,
   alternatives, count) before building; hold the line even if asked to
-  combine events. Never build several silently.
+  combine events. Never build several silently. No SOW is needed — offer an
+  optional scope summary only for a large or vague request.
 - **Speed:** run independent calls in parallel (Batches 1–3); read reference
   files only when a step needs them; ask every open question in one
   numbered round inside Step 9 — earlier only when the answer changes what
   you'd look up or build next.
+- **Questions:** sort every open point into decide yourself / assume and
+  state / must ask; ask only the "must ask" items, five or fewer, highest
+  risk first, each with a recommended answer.
 - **Org and connections:** re-resolve the org every run. Every app used has
   a saved credential — if not, ask the partner to add it, re-check, never
   build without it. Attach the credential to every app node, including the
@@ -606,13 +674,16 @@ ideas, the hardcoded workflow-link base URL) live in
   silently.
 - **Expertise:** review the design as an integration expert before Step 9
   (empty keys, weak matches, how many records a write can touch, first-run
-  scope, overwrites, loops, data ownership); add the safeguards yourself and
-  list them under "Safety checks I added". Judge every reference against
-  this scenario — never copy its logic, values, or node names blindly; when
-  they disagree, choose the safer design and explain why.
-- **Fields:** live operation detail governs required fields; docs are a
-  first pass; docs down → mark mappings not cross-checked, never stall or
-  invent docs. Never leave any value blank (nested fields included); fill via
+  scope, overwrites, loops, whether referenced records exist); add the
+  safeguards yourself and list them under "Safety checks I added". Judge
+  every reference against this scenario — never copy its logic, values, or
+  node names blindly; when they disagree, choose the safer design and
+  explain why.
+- **Docs:** query `/appseconnect/appse-ai-docs` directly with targeted,
+  need-driven queries (app fields, expressions, node behaviour); docs decide
+  meaning, the live detail decides what's required, `conventions.md`
+  decides the saved JSON. Never build a node type from docs alone.
+- **Fields:** never leave any value blank (nested fields included); fill via
   the Step 6 ladder and disclose proposed mappings with reasons.
   Company-specific settings: source field → run-time lookup → ask — never a
   reference's value. An object/array with unknown inner shape isn't resolved
