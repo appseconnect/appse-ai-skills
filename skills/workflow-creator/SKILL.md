@@ -579,6 +579,19 @@ first, then the order"), and check it in Step 10.
 Integration Expert; full version in `guide-expert-review.md` for anything
 beyond a simple sync) and add the safeguards it calls for.
 
+**Then run one last required-field gate before Step 9.** For every action
+node in the assembled flow, re-list its required fields from
+`get_operation_detail` and confirm each one has **both** a real value (not
+blank) **and** a value that matches what that field actually expects — its
+defined codes/enum values, per that field's own description or the docs —
+not a plausible-sounding constant assumed from general or prior-system
+knowledge. (Confirmed failure: a build mapped SAP B1's required `CardType`
+to `"cCustomer"`, but the operation's own description says the values are
+single letters — `"C"`/`"S"`/`"L"`; every create call failed. The field
+wasn't blank — it just wasn't checked against its own description.) A
+required field that's blank, or whose value hasn't been checked this way,
+goes back through the Step 6 mapping ladder — never straight to Step 9.
+
 ### Step 9 — Present Summary and Wait for Confirmation
 Before creating this workflow, present (following the Asking Questions and
 Tone guidance above):
@@ -631,7 +644,11 @@ always present or in a certain format, there's only one match, the data
 direction and system of record, volumes, what happens to records outside
 the rules. Anything you can't confirm from the partner's words, the docs,
 or a live check goes in Assumptions — never leave one silent. If being
-wrong would be costly or hard to undo, make it a question instead.
+wrong would be costly or hard to undo, make it a question instead. Also
+make it a question when a mapping has nothing to check it against at all —
+no docs, no live example, nothing — especially if that's true for most of
+the build, not one field. "Go ahead" shouldn't be the only thing standing
+between an unverified guess and a real write.
 
 ### Step 10 — Build and Save
 Call `create_workflow`, then `save_workflow` using the envelope structure
@@ -684,7 +701,12 @@ mapping applied, and which mappings were documentation-confirmed,
 unconfirmed, or **proposed by you** (Step 6 rungs 2–4). Repeat the proposed
 ones as a short list with their reasons, and close with: _"If any of these
 should come from somewhere else, tell me what to use and I'll update the
-workflow."_ If the partner then asks for a change, update this same workflow
+workflow. One real test beats this whole plan — trigger it once for real
+and tell me what happened here, so anything off gets fixed in one message
+instead of found later at volume."_ Naming a concrete, obvious trigger for
+this build (e.g. "update a customer's phone number") makes it easier for
+the partner to actually do this, not just agree to it. If the partner then
+asks for a change, update this same workflow
 (read it with `get_workflow`, change only the named fields, `save_workflow`)
 rather than creating a new one. The partner's change request is the go-ahead
 — save without asking again, then confirm what changed. This is what the

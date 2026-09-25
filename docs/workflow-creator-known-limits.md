@@ -4,7 +4,7 @@
 
 *Kept in `docs/`, outside `skills/workflow-creator/`, so it is **not** included when the skill or plugin is packaged for external partners (moved 2026-09-25). The skill files describe the lessons generically; the internal incident details behind them are in the Incident log at the end of this file.*
 
-*Last updated: 2026-09-24.*
+*Last updated: 2026-09-25.*
 
 ---
 
@@ -247,3 +247,25 @@ the internal test org, 2026-09-24.
 - **Workflow 22 — items assumed to exist.** The Shopify → SAP order flow
   checked the customer but not each order line's product; one new SKU would
   fail the whole order.
+- **Workflow 30 (2026-09-25) — SAP B1 `CardType` value, not just
+  required-ness.** `create_businesspartner`'s own description gives single
+  letters (`"C - Customer, S - Supplier, L - Lead"`), but the build sent
+  `"cCustomer"` — the SAP DI-API's internal enum name, not what this
+  operation asked for. Every create call failed (confirmed via
+  `list_executions`/`get_execution_summary`: 1/1 and later runs all
+  `failedRecords`, though the execution-level `failed` flag stayed `false`
+  — per-record failures don't propagate to that flag; check
+  `failedRecords`, not just `failed`). Distinct from the earlier CardType
+  entry (Open platform questions, §2), which was about required-ness being
+  undocumented — this is about the *value* being wrong even once the field
+  was correctly identified as required. Led to the required-field gate
+  (SKILL.md, end of Step 8) and the confirmed-quirks list in
+  `guide-field-mapping.md`.
+- **Workflow 25 (2026-09-25) — Shopify `Create Product` output wrapper.** A
+  follow-up node read `payload.id` to get the newly created product's ID;
+  the real output is `{ userErrors, product: { id, ... } }`, so the
+  read-back resolved empty and the node failed. The build had explicitly
+  flagged this exact field as an unconfirmed assumption in its own Step 9
+  summary and named the right first test — the test caught it as
+  predicted. Led to the chained-action-output rule (SKILL.md Step 6) and
+  the same confirmed-quirks list.

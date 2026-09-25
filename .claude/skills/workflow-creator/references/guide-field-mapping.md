@@ -59,8 +59,16 @@ value:
    payload and node names — never paste the reference's literal
    expression.
 4. **Sensible constant** — a fixed value that's the same in every
-   installation (e.g. customer type `Person` for Shopify shoppers, `C` for
-   an SAP B1 Business Partner created from a customer, `lineType: "Item"`).
+   installation (e.g. customer type `Person` for Shopify shoppers,
+   `lineType: "Item"`). **Read the exact value from the operation's own
+   field description — never from general platform/SDK knowledge, even
+   knowledge that's usually right.** A platform's underlying API can use a
+   different literal than the operation actually expects. Confirmed
+   failure: SAP B1's `create_businesspartner` describes `CardType` as
+   single letters — `"C - Customer, S - Supplier, L - Lead"` — but a build
+   sent `"cCustomer"` (the SAP DI-API's own internal enum name, not what
+   this operation asked for), and every create call failed. The correct
+   value is `"C"`, exactly as the operation's own description states.
    **Never** for company-specific settings — see below.
 5. **Ask** — only if no rung above gives a plausible value. It's a "must
    ask" question in Step 9: name the field and what it's for, with a
@@ -152,3 +160,26 @@ images/media but the source's records don't carry structured media), say so
 plainly and recommend a simpler alternative operation if one exists (e.g.
 Shopify `create_product` instead of `create_product_options_and_media`),
 rather than building something that would fail on every run.
+
+---
+
+## Confirmed app-specific quirks (check these before you map)
+
+Real, confirmed facts about specific apps' operations — add to this list
+only when a build actually confirms one; never add a guess here.
+
+- **SAP Business One — `CardType`:** the operation's own description gives
+  single letters (`"C"`/`"S"`/`"L"`), not the DI-API's internal enum name
+  (`cCustomer`/`cSupplier`/`cLid`). See the mapping ladder above.
+- **SAP Business One — `Currency`:** the code is whatever that company
+  defined in their own system (e.g. `"$"`), never assume the ISO code
+  (`"USD"`). See Company-specific settings above.
+- **Shopify — GraphQL create/update actions wrap the result under the
+  entity's own name.** `Create Product` returns
+  `{ userErrors, product: { id, title, variants: {...}, ... } }` — not a
+  flat `{ id, title, ... }`. A later node reading this action's output must
+  include the wrapper (e.g. `payload.product.id`, not `payload.id`) —
+  confirmed failure when a node assumed the flat shape and the read-back
+  came through empty. Check every Shopify GraphQL action's real output
+  shape the same way before writing a read-back expression — don't assume
+  this one example covers every action.
