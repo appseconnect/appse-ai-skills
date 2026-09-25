@@ -1,7 +1,7 @@
 {
   "name": "appse-partner",
   "displayName": "appse ai Partner Accelerator",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "appse ai Partner Accelerator — skills that help implementation partners scope and build customer workflows faster, across apps they don't know deeply.",
   "author": { "name": "appse ai", "email": "eng@appse.ai" },
   "repository": "https://github.com/appseconnect/appse-ai-skills",
@@ -15,6 +15,7 @@
   "skills": [
     "./skills/workflow-creator",
     "./skills/sow-generator",
-    "./skills/requirement-digest"
+    "./skills/requirement-digest",
+    "./skills/cross-app-scenario-advisor"
   ]
 }

@@ -209,21 +209,44 @@ Scenario Advisor which battle-tested pattern to reach for.
 
 **Not this skill's job:** suggesting complementary apps the customer didn't
 mention (e.g. "they named an eCommerce app and an ERP — ask if they also
-want a CRM connected") is the Cross-App Scenario Advisor's job once it
-exists, not this skill's. It needs its own live `list_apps` category lookup
-and a "supported as of {date}" disclaimer to avoid suggesting something
-stale — improvising it here, without that check, risks recommending an app
-pairing that isn't actually buildable. Note it as a candidate Open Question
-(Step 7) at most (e.g. "Worth asking whether a CRM should be in scope too"),
-never as a firm recommendation.
+want a CRM connected") is `cross-app-scenario-advisor`'s job, not this
+skill's. It needs its own live `list_apps` category lookup and a "supported
+as of {date}" disclaimer to avoid suggesting something stale — improvising
+it here, without that check, risks recommending an app pairing that isn't
+actually buildable. If the apps named span more than one category (e.g. an
+eCommerce app and an ERP), add a single line pointing there instead of
+guessing a suggestion: _"Worth a quick capability check on what else
+typically pairs with these before your next call?"_ — never a firm
+recommendation of a specific app.
 
 ### Step 7 — Draft Open Questions as Ready-to-Send Follow-Ups
+
+**These are for the partner to send to the customer — not questions the
+partner answers here.** Say so plainly at the top of this section every
+time (see Step 9's presentation order); don't leave it implied.
 
 Don't list gaps as bare statements — draft them as text the partner could
 paste directly into a follow-up email. "We didn't get expected order
 volume" is a gap; "Roughly how many orders/day do you process today, and do
 you expect that to grow significantly in the next 12 months?" is something a
 partner can actually send.
+
+**Rank and cap, the same way `sow-generator` and `workflow-creator` do —
+don't just list every gap:**
+- **Rank by what actually changes the scope or the readiness signal**
+  (e.g. which system owns the master record, how a stated-but-ambiguous
+  detail like a discount or a product match should work, a hard go-live
+  date) above what's merely nice to know (e.g. which countries customers
+  are in, when nothing else suggests a compliance angle).
+- **Cap at five, ranked** — if there are more real gaps than that, keep the
+  five most scope-relevant as Open Questions and fold the rest into
+  **[Missing]** tags on the relevant field instead of a standalone
+  question. Never drop a gap that changes the readiness signal just to
+  hit the number — downgrade lower-impact ones first.
+- **State the reply format once, plainly** — since these go to the
+  customer, not the partner, say so: _"Numbered so you can paste these
+  into one email, or split them up — however you'd normally follow up."_
+  Don't imply the partner must answer them in this conversation.
 
 ### Step 8 — Determine the Readiness Signal
 
@@ -249,11 +272,15 @@ labels from the Partner-Facing Language section throughout. In order:
 2. **Ready to scope?** — the Step 8 readiness signal
 3. The five confidence-tagged fields (Step 3, cross-checked per Step 4)
 4. **Customer's terms** (Step 5), **Industry signals** (Step 6), and Open
-   Questions as ready-to-send follow-ups (Step 7)
+   Questions (Step 7) — introduce this last section with the "these are
+   for you to send to the customer" line and the reply-format note from
+   Step 7, every time; never leave it implied
 5. A closing next-step line: _"Next: say 'draft a SOW from this' to turn
    this summary into a Scope of Work."_ If the readiness signal is **Needs
    a follow-up call**, make the next step sending the Open Questions
-   instead, and say the SOW should wait.
+   instead, and say the SOW should wait. If the apps named span more than
+   one category (Step 6), add the one-line capability-check pointer there
+   too — never more than once, never as a firm app recommendation.
 
 If this was a merge (Step 2), show what changed from the prior digest, not
 just the final state. Tight, scannable sections — this is read quickly by a
@@ -302,6 +329,10 @@ built.
 - Not yet tested: the Call Prep Checklist (Step 10) end-to-end, a
   three-or-more-call merge chain, discovery material in a language other
   than English
+- **Open Questions rank/cap and the `cross-app-scenario-advisor` pointer
+  (added 2026-09-25)** — never exercised live. Watch whether a genuinely
+  scope-changing gap ever gets folded into [Missing] just to stay under
+  five; that would be the rule working against its own intent
 
 ---
 
@@ -322,7 +353,15 @@ built.
 - Never upgrade an Inferred fact to Stated confidence because Stated would
   be more convenient for scoping
 - Always draft Open Questions as ready-to-send follow-up text, not bare gap
-  statements
+  statements — and always state plainly that they're for the customer, not
+  the partner, with a one-line reply-format note, every time
+- Cap Open Questions at five, ranked by what actually changes the scope or
+  readiness signal — fold lower-impact gaps into **[Missing]** tags instead
+  of padding the list; never drop a scope-changing gap just to hit the cap
+- Suggesting a complementary app the customer didn't name is
+  `cross-app-scenario-advisor`'s job, not this skill's — at most, one
+  pointer line when named apps span more than one category; never a firm
+  app recommendation of its own
 - Always merge into an existing digest for the same deal (Step 2) rather
   than producing a duplicate — and always show what changed, never silently
   overwrite
