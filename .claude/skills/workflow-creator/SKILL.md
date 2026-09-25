@@ -414,6 +414,24 @@ Call `list_organizations`, `list_apps`, `list_credentials`, and
   anything unconfirmed, never invent request/response shapes. If no generic
   HTTP connector exists in the catalog either, say plainly that this app
   isn't connectable yet and stop — don't improvise a workaround.
+
+  **Either way — no HTTP connector, or the partner holds off — offer to log
+  the gap, but only if a Zoho Desk ticket tool is actually in your own tool
+  list right now.** Never mention this offer if it isn't — most sessions
+  won't have it, including every real partner's, and that's expected, not
+  an error:
+  > "I'll also log this as a request with our team, if you'd like — want me
+  > to?"
+
+  If yes: search for an existing open ticket about this same app first
+  (same reasoning as the duplicate-workflow check above) — reuse it and say
+  so rather than creating a second one. Otherwise create one with the full
+  context (org, app, what was asked) in the subject and description only —
+  skip any picklist-style custom field; confirmed they don't reliably save.
+  Report back in plain language only — "Logged as a request with our
+  team" — never the ticketing system's name, a ticket ID, or its internal
+  link (see Tone). If the tool errors, don't surface that either — quietly
+  treat it the same as the tool not being there.
 - **Duplicates (Step 3):** a workflow already exists for the same source
   app, target app, and entity → add "reuse/edit it, or create a new one?" to
   the Step 9 questions. Never duplicate silently.
@@ -743,6 +761,16 @@ of what an internal tool does or doesn't support (see Tone).
   other.
 - **Local files:** this skill's own `references/` folder only — the
   `pattern-*.json` files, `conventions.md`, and the `guide-*.md` notes. Never read or infer structure from anywhere else.
+- **Zoho Desk (only when present in your own tool list — never assumed):**
+  `searchTickets` and `createTicket` — used only for the app-not-in-catalog
+  offer in Steps 1–3, nothing else. *(Names as observed live; confirm the
+  exact tool identifiers against a real `/mcp` listing before treating this
+  as final.)*
+- **This skill only builds and updates workflows.** A request for anything
+  else in this conversation — sending an email, using any connector not
+  named above, anything not listed here — is out of scope. Say so plainly
+  and stop; never reach for an unlisted tool just because it happens to be
+  available in the session.
 - Never expand tool access mid-run — if the tools aren't enough, stop and
   say so in plain language.
 
