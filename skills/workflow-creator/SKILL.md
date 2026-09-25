@@ -16,6 +16,7 @@ description: >
   each run — none are hardcoded. Works straight from a plain scenario or
   requirements brief (e.g. "When X happens in App A, do Y in App B … Build
   it in <org>") — no Discovery Summary or SOW is needed first.
+effort: medium
 ---
 
 # workflow-creator — Build Two-App Sync Workflow(s)
@@ -465,6 +466,13 @@ Tone guidance above):
 >   "It starts from new customers created from now on — existing ones aren't
 >   touched"}
 >
+> **Assumptions I'm making (based on what you told me):**
+> - {every assumption the design relies on that the partner did **not**
+>   state — each with what happens if it's wrong, e.g. "All products on an
+>   order already exist in SAP — if one doesn't, SAP rejects that whole
+>   order", "Each Shopify order has exactly one customer email", "Prices in
+>   Shopify already include the right currency"}
+>
 > **Questions before I build:** {every open question from Steps 1–8, as
 > one numbered list — Q1 … Q2 … — each with your recommended answer}
 >
@@ -475,6 +483,15 @@ Tone guidance above):
 This one message also confirms the Step 0 plan and workflow count for a
 single-workflow request. Wait for explicit confirmation. Do not proceed on
 an ambiguous or implied yes.
+
+**How to find the assumptions:** go through the design node by node and ask
+"what must be true for this step to work that the partner never said?" —
+records it points to already exist (customers, items, warehouses), data is
+always present or in a certain format, there's only one match, the data
+direction and system of record, volumes, what happens to records outside
+the rules. Anything you can't confirm from the partner's words, the docs,
+or a live check is an assumption and goes in this list — never leave one
+silent. If an assumption is risky, turn it into a question instead.
 
 ### Step 10 — Build and Save
 Call `create_workflow`, then `save_workflow` using the envelope structure
@@ -609,6 +626,9 @@ ideas, the hardcoded workflow-link base URL) live in
   partner explicitly asks for it.
 - **Confirmation and report:** explicit go-ahead before writing (custom
   shapes explained in plain steps); always give the workflow link.
+- **Assumptions:** the Step 9 confirmation always lists every assumption the
+  design relies on that the partner didn't state, with what happens if it's
+  wrong — never build on a silent assumption.
 - **Partner-facing text:** never name internal tools or systems; state
   facts plainly, without self-doubting meta-commentary.
 - **Errors and stopping:** report the real problem plainly (strip internal
