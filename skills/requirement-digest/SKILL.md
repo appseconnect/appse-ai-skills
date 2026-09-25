@@ -207,6 +207,16 @@ distribution: warehouse, pick-pack), and note if the digest reflects a
 specific vertical's process model. This tells the downstream Cross-App
 Scenario Advisor which battle-tested pattern to reach for.
 
+**Not this skill's job:** suggesting complementary apps the customer didn't
+mention (e.g. "they named an eCommerce app and an ERP — ask if they also
+want a CRM connected") is the Cross-App Scenario Advisor's job once it
+exists, not this skill's. It needs its own live `list_apps` category lookup
+and a "supported as of {date}" disclaimer to avoid suggesting something
+stale — improvising it here, without that check, risks recommending an app
+pairing that isn't actually buildable. Note it as a candidate Open Question
+(Step 7) at most (e.g. "Worth asking whether a CRM should be in scope too"),
+never as a firm recommendation.
+
 ### Step 7 — Draft Open Questions as Ready-to-Send Follow-Ups
 
 Don't list gaps as bare statements — draft them as text the partner could

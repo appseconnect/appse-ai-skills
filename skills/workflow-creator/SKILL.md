@@ -396,6 +396,24 @@ Call `list_organizations`, `list_apps`, `list_credentials`, and
   cloud vs. on-prem) and only one has a credential, use it and say so — no
   question. Don't block on the `isValidated` flag (meaning unconfirmed;
   temporary internal override — don't mention it to the partner).
+- **App not in the catalog at all** (distinct from a missing credential
+  above — this is `list_apps` returning nothing for the app, not an
+  uncredentialed match): don't stop at "not supported." Check `list_apps`
+  for a generic HTTP/webhook connector in this org's catalog. If one exists,
+  offer it as an option — never assume it exists or guess its
+  configuration:
+  > "**{app}** isn't a built-in connector in appse ai yet. If it has a REST
+  > API, we could connect to it using a generic HTTP node instead — that
+  > needs its API docs and authentication details. Want to try that, or
+  > hold off on this app for now?"
+
+  If the partner wants to proceed, treat the HTTP node like any other node
+  type this skill has no confirmed JSON shape for (see "A node type the
+  docs describe but `conventions.md` has no confirmed JSON for" above) —
+  build only what `query-docs`/`get_operation_detail` confirm, mark
+  anything unconfirmed, never invent request/response shapes. If no generic
+  HTTP connector exists in the catalog either, say plainly that this app
+  isn't connectable yet and stop — don't improvise a workaround.
 - **Duplicates (Step 3):** a workflow already exists for the same source
   app, target app, and entity → add "reuse/edit it, or create a new one?" to
   the Step 9 questions. Never duplicate silently.

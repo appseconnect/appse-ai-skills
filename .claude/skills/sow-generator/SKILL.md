@@ -97,7 +97,7 @@ separate process entirely (see Step 8).
 | -------------------- | -------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
 | `requirement_digest` | ⬜ (recommended) | User provides — or a raw brief / call notes instead                                              | The completed digest from `requirement-digest` (shown to partners as the "Discovery Summary") — recommended; raw briefs or notes are also accepted, see Step 0 — readiness signal, five confidence-tagged fields, vocabulary map, vertical signals, open questions | —                                                 |
 | `sow_format`         | ⬜       | User provides, if asked in Step 0                          | The partner's own SOW template or house format                                                                                                     | none — falls back to the generic format in Step 1 |
-| `org_id`             | ⬜       | User confirms, only if capability cross-checking is wanted | Which appse ai org's catalog to cite real capabilities from in Step 3                                                                              | skip cross-check if not given                     |
+| `org_id`             | ⬜       | User confirms, only if capability cross-checking is wanted — re-resolve every run, never reused from an earlier run or conversation | Which appse ai org's catalog to cite real capabilities from in Step 3                                                                              | skip cross-check if not given                     |
 
 ---
 
@@ -149,7 +149,11 @@ type.
 
 When no partner format is given, use this structure, in this order —
 matching common industry SOW convention and appse ai's own partner support
-model (Steps 4–8 below map onto it directly):
+model (Steps 4–8 below map onto it directly). The exact section order,
+headings, and placeholder style are fixed in
+`references/generic-sow-template.md` — use it verbatim for Step 11's file so
+every fallback-format SOW looks the same across runs, not redrafted from
+scratch each time:
 
 1. Header — account name, date, deal/opportunity reference
 2. Background — brief context from the digest (one short paragraph)
@@ -285,6 +289,10 @@ provisional) or wait for a follow-up call first. Do not silently upgrade a
 thin digest into a confident-sounding document.
 
 ### Step 3 — Ground Deliverables in Real Capabilities (if `org_id` given)
+
+If cross-checking is wanted, confirm `org_id` fresh for this run — never
+reuse one from an earlier run or an earlier point in this conversation, even
+for the same partner or account.
 
 For each app/entity named in the digest's Apps Involved and Candidate
 Triggers/Actions fields, check `list_apps`/`list_operations` to cite the
@@ -469,10 +477,11 @@ that without asking again. Then:
   same content so they match.
 - **Template:** if the partner supplied their own SOW template as a `.docx`
   in Step 0, fill that document (keeping its styles, headers, logo) rather
-  than creating a new one. Otherwise use a clean, neutral professional
-  layout: title, the header block (account, date, reference), then each
-  section as a heading. Don't add appse ai branding — this is the partner's
-  document to their customer; use their branding only if they provide it.
+  than creating a new one. Otherwise follow
+  `references/generic-sow-template.md` exactly (section order, headings,
+  placeholder style) with a clean, neutral professional layout. Don't add
+  appse ai branding — this is the partner's document to their customer; use
+  their branding only if they provide it.
 - **Carry the flags into the file:** if the SOW is provisional (Step 2), put
   a clear "PROVISIONAL DRAFT — pending follow-up call" line at the top of
   the document; keep any Open Items to Confirm Before Kickoff clearly

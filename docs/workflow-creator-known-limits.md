@@ -112,6 +112,13 @@
   confirmed, but each new combination is unproven until it runs.
 - **Local file reads under `references/`** — first live runs will show
   whether they trigger approval prompts.
+- **Generic HTTP-node offer for an uncataloged app** (added 2026-09-25,
+  Step 2 of Steps 1–3) — never exercised live. Unconfirmed: whether a
+  generic HTTP/webhook connector actually exists in any tested org's
+  `list_apps` catalog at all, and if so, whether its `save_workflow` shape
+  is covered by `conventions.md` or would need a fresh `query-docs` /
+  `get_operation_detail` pass the first time a partner takes this option.
+  Treat the first real case as a test, not a routine build.
 
 ---
 

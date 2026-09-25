@@ -18,7 +18,11 @@
       "mcp__claude_ai_Context7__resolve-library-id",
       "mcp__claude_ai_Context7__query-docs",
       "Read(./skills/workflow-creator/**)",
-      "Read(./.claude/skills/workflow-creator/**)"
+      "Read(./.claude/skills/workflow-creator/**)",
+      "Read(./skills/sow-generator/**)",
+      "Read(./.claude/skills/sow-generator/**)",
+      "Read(./skills/requirement-digest/**)",
+      "Read(./.claude/skills/requirement-digest/**)"
     ]
   }
 }
