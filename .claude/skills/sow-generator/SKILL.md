@@ -184,9 +184,12 @@ where sensible, the options. Check at least:
   One cloud vs. on-premise), which system owns which data, and the direction
   of each flow.
 - **Application availability** — check each app against the appse ai
-  catalog (`list_apps`). If an app isn't available, **don't draft around
-  it** — ask how to handle it (a custom connector, an alternative app, or
-  out of scope) and say what each option means for scope.
+  catalog (`list_apps`). **An unavailable app never blocks the SOW.** Scope
+  it from the business logic, integration logic, and the partner's input,
+  and make connecting to that app an explicit part of the scope (see
+  "When an application isn't available in appse ai" below). Ask only what
+  genuinely changes that scope — e.g. whether the app has an API and
+  documentation — each with a recommended answer.
 - **Entities, events and volumes** — which records (orders, customers,
   items…), what triggers each sync, how many per day and at peak.
 - **Customizations** — see Step 4; always ask.
@@ -204,6 +207,52 @@ Rules:
   firm deliverable.
 - Don't ask what the input already states clearly.
 
+**Ask like a senior pre-sales consultant — propose, then confirm.** Never
+hand the partner a blank checklist. Do the thinking first and let them
+confirm or adjust:
+
+- **Every question carries your recommended answer**, based on industry
+  standard practice for this kind of integration — so the partner can reply
+  "go ahead" and settle most points at once. Say briefly why you recommend
+  it.
+- **Sort the questions before asking:**
+  - **Must ask** — blocks an honest draft and has no safe default: the scope
+    of a broad request, application edition/deployment where it changes
+    scope, customizations, the go-live constraint, how an unavailable app
+    can be reached (API, documentation, access), and the **success
+    metrics** — how the customer will measure the project's success. Ask
+    these, each with a recommendation (for success metrics, suggest two or
+    three measurable ones that fit the scope, e.g. "orders in the ERP within
+    15 minutes", "zero duplicate records", "no manual re-keying").
+  - **Propose and confirm** — has a sensible industry default: data
+    ownership and flow direction, phasing, standard delivery conditions.
+    State your proposal; it stands unless the partner changes it.
+  - **Can wait** — useful but not needed to draft: header details (customer
+    name, reference), volumes, background on today's process. Don't ask
+    these up front; use a placeholder or "To be confirmed with the customer
+    before kickoff".
+- **Aim for five questions or fewer**, ranked by impact. If there are more,
+  move the lower-impact ones into "propose and confirm" or "can wait" —
+  never drop a genuine must-ask just to hit the number.
+- **For a broad request** ("the entire B2B sales cycle", "full integration
+  between X and Y", "sync everything"), don't ask entity by entity. Propose a
+  **recommended scope table** from standard practice for that app pair —
+  each entity with in scope / later phase / out, flow direction, and which
+  system owns the master record — and ask the partner to confirm or edit it.
+  For example, for e-commerce ↔ ERP B2B: customers/companies, items,
+  inventory, and price lists flow ERP → store (ERP is master); orders flow
+  store → ERP; shipment status and invoices flow ERP → store; quotes and
+  returns in a later phase.
+- **For a programme-sized scope, propose phases** — e.g. Phase 1: master
+  data and orders; Phase 2: fulfilment and invoicing; Phase 3: quotes,
+  returns, and credits — each phase with its own deliverables, milestones,
+  and acceptance criteria in the SOW. Industry practice is to deliver the
+  highest-value, lowest-risk flows first.
+- **Include the hidden scope question a consultant would ask**, not just
+  the obvious ones — e.g. for custom fields: *who creates them in the
+  target system, and does that need development (e.g. an ERP extension)?*
+  That often changes scope and ownership more than the fields themselves.
+
 ### Step 2 — Check the Digest's Readiness Signal
 
 If the Requirement Digest's readiness signal is **Needs a follow-up call**,
@@ -220,6 +269,37 @@ real, confirmed appse ai capability or connector involved, rather than
 generic language. If a lookup isn't available or doesn't resolve, write the
 deliverable in plain functional terms instead — never fabricate a named
 feature or connector to sound more specific than what's actually confirmed.
+
+#### When an application isn't available in appse ai
+
+Still write the full SOW. The business process and integration logic don't
+change because a connector doesn't exist yet — only how that one system is
+reached does. Scope it the way an integration specialist would:
+
+- **Describe the flows in business terms** exactly as for any other app
+  (what triggers, which records, which direction, which rules) — never
+  leave them out or water them down.
+- **Add an explicit deliverable for connecting to that app** — e.g.
+  "Connectivity to MedFlow WMS through its REST API: API assessment,
+  authentication setup, the endpoints needed for orders and shipment
+  confirmations, error handling and retries." Call it what it is (a custom
+  or API-based connection), never a standard connector.
+- **Put it early in the plan:** a technical assessment of the app's API at
+  the start of the Discovery & design phase, before the build commits to
+  it.
+- **Add its dependencies** under Project Assumptions & Dependencies — API
+  documentation, a test/sandbox instance, credentials, and the app vendor
+  or owner's availability.
+- **Add its real risks** under Risks & Mitigations — e.g. missing or
+  limited API capabilities (mitigation: the assessment happens before
+  build), rate limits, authentication changes.
+- **Reflect it in the indicative timeline** — connectivity work usually
+  lengthens Discovery and Build; say so rather than hiding it.
+- **Ask only what changes the scope**, with a recommendation — e.g. "Does
+  MedFlow have a REST API with documentation? (Recommended: confirm
+  before kickoff; the SOW includes an API assessment either way.)" If the
+  partner doesn't know, mark it "To be confirmed with the customer before
+  kickoff" and still draft.
 
 ### Step 4 — Draft Objectives
 
@@ -421,11 +501,20 @@ existing file.
 ## Output Rules
 
 - **No assumptions.** Anything unclear about the scenario, business use
-  case, applications, or scope — or an application that isn't available in
-  appse ai — is asked in one numbered round (Step 1A) before drafting.
+  case, applications, or scope is asked in one numbered round (Step 1A)
+  before drafting.
+- **An unavailable application never blocks the SOW.** Scope its flows from
+  the business and integration logic and the partner's input, and add the
+  connection to that app as an explicit deliverable, with its API
+  assessment, dependencies, risks, and timeline impact (Step 3).
   Never fill a gap with a guess or park it as an assumption; if the partner
   says to proceed without an answer, mark it "To be confirmed with the
   customer before kickoff"
+- **Propose, then confirm — never a blank checklist.** Every question has a
+  recommended answer from industry practice; five must-ask questions or
+  fewer, ranked by impact; header details, volumes, and background can wait.
+  For broad scopes, offer a recommended scope table (entity, in/later/out,
+  direction, master system) and phases for the partner to confirm or edit
 - **Objectives are clear and measurable**, and customizations are always
   asked about — agreed ones become deliverables, the rest are excluded
 - **The plan is industry-standard and convincing:** phased approach and
