@@ -8,6 +8,9 @@ description: >
   to "draft a SOW," "write the scope of work," or "turn this digest into a
   proposal document." Always asks for the partner's own SOW format first;
   falls back to a generic industry-standard structure only if none is given.
+  Never assumes — asks the partner about anything unclear (scenario,
+  business use case, applications, customizations) before drafting, and
+  produces a clear, measurable, industry-standard SOW.
   Always delivers the final SOW as a Word (.docx) or PDF file, ready to send
   to the customer.
   Not for estimating effort or team size — that's a separate downstream
@@ -20,14 +23,27 @@ license: Internal — appse ai Partner Accelerator
 Converts a completed Requirement Digest into the document a partner can put
 in front of a customer. The Requirement Digest's confidence-tagging is not
 discarded here — it's the mechanism this skill uses to decide what becomes a
-firm scope statement versus what becomes an explicit Assumption (Step 5).
-That link is what keeps the SOW honest about what the discovery call actually
-established versus what's being carried forward as a reasonable guess.
+firm scope statement (Stated) versus what must be confirmed with the partner
+before it can go in the SOW (Inferred or Missing → Step 1A questions). That
+link is what keeps the SOW honest about what the discovery call actually
+established.
 
 **The failure mode this skill exists to prevent:** a SOW that reads as
 confidently as if every line were confirmed, when in reality half of it was
 inferred from a single vague sentence in a discovery call. A customer reading
 the SOW has no way to tell the difference unless the document tells them.
+
+**Core principles (apply to every SOW):**
+1. **No guessed content.** If anything about the scenario, the business use
+   case, the applications, or the scope is unclear — or an application isn't
+   available in appse ai — ask the partner before drafting (Step 1A). Never
+   fill a gap with a guess, and never move a guess into the SOW as an
+   "assumption" for the customer to catch later.
+2. **Clear, measurable objectives** — each tied to a business outcome and a
+   way to measure it — and an explicit answer on customizations (Step 4).
+3. **A convincing, industry-standard plan** — a phased delivery approach,
+   measurable acceptance criteria, change control, risks, and support, in
+   confident professional language (Steps 1 and 8A).
 
 ---
 
@@ -59,9 +75,10 @@ separate process entirely (see Step 8).
 > 2. Duplicate-order prevention on the SAP B1 side
 > 3. Customer/Business Partner record creation for new Shopify customers
 >
-> **Assumptions:** _(carried forward from the Requirement Digest as [Inferred], not confirmed)_
+> **Project Assumptions & Dependencies:** _(agreed delivery conditions — not guesses about scope)_
 >
-> - A Business Partner record is created automatically for new customers, since this wasn't explicitly confirmed on the discovery call
+> - Customer provides SAP Business One and Shopify admin access, and a test environment, before build starts
+> - Customer nominates a business owner to join UAT and sign off within 5 business days of each test cycle
 >
 > **Exclusions:**
 >
@@ -106,9 +123,8 @@ is **recommended, not required**:
   separates what the customer confirmed from what we're assuming — or I can
   draft the SOW straight from it. Which would you prefer?"_ If they choose to
   draft directly, do so: treat what the material states plainly as
-  deliverables, and put everything you'd have to infer into Assumptions
-  (Step 6), phrased for the customer to confirm. Don't block on missing
-  fields — list them under Exclusions or Assumptions.
+  deliverables, and turn everything you'd otherwise have to infer into
+  clarifying questions (Step 1A) — never into assumptions.
 - Only if there's essentially nothing to work from (e.g. "write a SOW for
   Shopify to SAP" and nothing else), ask for the brief or notes before
   drafting.
@@ -135,18 +151,58 @@ model (Steps 4–8 below map onto it directly):
 
 1. Header — account name, date, deal/opportunity reference
 2. Background — brief context from the digest (one short paragraph)
-3. Objectives
-4. Scope of Services / Deliverables
-5. Assumptions
-6. Exclusions
-7. Indicative Timeline
-8. Roles and Responsibilities — partner vs. customer vs. appse ai, reflecting
+3. Objectives — measurable business outcomes (Step 4)
+4. Scope of Services / Deliverables — including agreed customizations
+5. Project Approach & Milestones — the phased delivery plan (Step 8A)
+6. Project Assumptions & Dependencies — agreed delivery conditions only
+   (Step 6), never guesses about scope
+7. Exclusions
+8. Indicative Timeline
+9. Roles and Responsibilities — partner vs. customer vs. appse ai, reflecting
    the real support split (partner owns workflow logic, mappings, and
    business rules; appse ai owns core platform, connectors, and
    infrastructure)
-9. Acceptance Criteria — how the customer confirms deliverables are met
-10. Commercial Terms — a reference/placeholder line only ("commercial terms
+10. Acceptance Criteria — how the customer confirms deliverables are met,
+    each one measurable and testable
+11. Change Control — how scope changes are requested, assessed, and approved
+12. Risks & Mitigations — the real delivery risks for this scope, each with
+    a mitigation
+13. Support & Hypercare — the post-go-live support window and what it covers
+14. Commercial Terms — a reference/placeholder line only ("commercial terms
     per the accompanying quote/contract"); this skill never drafts pricing
+
+### Step 1A — Clarify Everything Before Drafting (no assumptions)
+
+Before drafting a single section, go through the input and list **every
+point you'd otherwise have to guess**. Ask them all in **one numbered round**
+(e.g. "Q1 … Q2 … — reply like '1: …, 2: …'"), each with a short reason and,
+where sensible, the options. Check at least:
+
+- **Scenario & business use case** — what problem is being solved, for
+  whom, and why now; what happens today (manual process, current tools).
+- **Applications** — exact product and edition/version (e.g. SAP Business
+  One cloud vs. on-premise), which system owns which data, and the direction
+  of each flow.
+- **Application availability** — check each app against the appse ai
+  catalog (`list_apps`). If an app isn't available, **don't draft around
+  it** — ask how to handle it (a custom connector, an alternative app, or
+  out of scope) and say what each option means for scope.
+- **Entities, events and volumes** — which records (orders, customers,
+  items…), what triggers each sync, how many per day and at peak.
+- **Customizations** — see Step 4; always ask.
+- **Constraints** — go-live date, compliance or data-residency needs,
+  environments available (test/production), existing integrations to
+  replace or coexist with.
+- **Success measures** — how the customer will judge the project a success.
+
+Rules:
+- **Don't draft until the answers are in.** If the partner answers only
+  some, say which are still open and ask again for those.
+- If the partner explicitly says to proceed without an answer, mark that
+  point in the SOW as **"To be confirmed with the customer before
+  kickoff"** — a visible open item, never a silent assumption, and never a
+  firm deliverable.
+- Don't ask what the input already states clearly.
 
 ### Step 2 — Check the Digest's Readiness Signal
 
@@ -172,20 +228,44 @@ Candidate Triggers/Actions and the pain implied by its Constraints —
 phrased as what changes for the customer, not as a feature list (that's
 Step 5).
 
+**Make every objective clear and measurable:** a specific outcome, the
+process it applies to, and how success is measured — e.g. *"Eliminate
+manual entry of Shopify orders into SAP Business One: every paid order
+appears in SAP as a sales order within 15 minutes, with no duplicates."*
+If the partner hasn't given a measure (time saved, error rate, processing
+time, volume handled), ask for it in Step 1A rather than inventing one.
+Avoid vague wording like "improve efficiency" or "streamline operations"
+without a measure.
+
+**Always ask about customizations** (in Step 1A), even if none are
+mentioned: *"Are any customizations needed — custom fields, business rules
+or transformations, special cases (e.g. B2B pricing, multi-warehouse),
+custom reports, or a connector for an app that isn't available?"*
+Agreed customizations become explicit deliverables; anything declined or
+not yet decided goes under Exclusions ("Customizations beyond those listed
+above").
+
 ### Step 5 — Draft Deliverables, Tagged by Confidence Source
 
-Each deliverable traces back to a **[Stated]** fact in the digest. Anything
-that would only be supportable by an **[Inferred]** fact belongs in
-Assumptions (Step 6), not stated here as a firm deliverable — do not let an
-inferred detail slip into the confident, committed section of the document.
+Each deliverable traces back to a **[Stated]** fact in the digest, or to an
+answer the partner confirmed in Step 1A. An **[Inferred]** fact is never a
+deliverable on its own — it's a Step 1A question first; once the partner
+confirms it, it becomes a deliverable. Do not let an unconfirmed detail slip
+into the committed section of the document. Write each deliverable
+specifically: what is built, between which systems, for which records, and
+the observable result.
 
-### Step 6 — Draft Assumptions Directly from the Digest's [Inferred] Tags
+### Step 6 — Draft Project Assumptions & Dependencies (agreed conditions only)
 
-This is the mechanical core of the link between the two skills: **every
-fact the Requirement Digest tagged [Inferred] becomes an explicit
-Assumption line here**, phrased so the customer can see and challenge it
-("Assumes X, based on Y — please confirm"). Do not silently fold an
-inferred fact into a deliverable as if it were confirmed.
+**[Inferred] facts from the digest do not go here** — they were turned into
+Step 1A questions. This section holds only standard, agreed **delivery
+conditions** that every SOW needs, stated so the customer can see their side
+of the work — e.g. access to each application and a test environment before
+build starts, a named business owner for UAT sign-off within an agreed
+number of days, sample/test data, availability of the customer's IT contact,
+third-party vendors providing what's needed on time. Anything the partner
+told you to proceed without in Step 1A appears as **"To be confirmed with
+the customer before kickoff"**, clearly marked — never phrased as settled.
 
 ### Step 7 — Draft Exclusions
 
@@ -203,13 +283,51 @@ and Team Estimator skill. Never present a specific date or a
 resource-backed estimate here; this step exists to give the customer a
 general sense of pace, not a commitment.
 
+### Step 8A — Draft the Delivery Plan (industry-standard, convincing)
+
+Write the plan the way an experienced integration delivery lead would —
+specific to this scope, confident, and in standard project language:
+
+- **Project Approach & Milestones** — the standard phases, each with its
+  output and a customer checkpoint:
+  1. *Discovery & design* — requirements confirmed, field mappings and
+     business rules signed off
+  2. *Build & configure* — workflows built on appse ai in a test
+     environment
+  3. *Testing* — system/integration testing by the partner, then user
+     acceptance testing (UAT) by the customer against the acceptance
+     criteria
+  4. *Deployment & go-live* — cut-over plan, production switch-on, first
+     live records verified
+  5. *Hypercare* — a defined post-go-live support window
+- **Acceptance Criteria** — one per deliverable, measurable and testable
+  (e.g. "10 test orders, including a new customer and a multi-line order,
+  appear in SAP with correct lines, prices, and no duplicates").
+- **Change Control** — changes to scope are raised in writing, assessed for
+  effort and timeline impact, and approved by both parties before work
+  starts.
+- **Risks & Mitigations** — the real risks for *this* scope, not a generic
+  list (e.g. master data not yet in the ERP → item sync before order sync;
+  API limits at peak volume → batch sizing and monitoring; customer
+  sign-off delays → agreed review windows).
+- **Support & Hypercare** — the length of the window, what's covered, and
+  how issues are raised; ongoing support beyond it is a separate agreement.
+
+Keep it convincing: lead with the customer's outcome, be specific (systems,
+records, volumes, measures), avoid hedging and filler, and never overstate
+— no guarantees the scope can't back up. Detailed effort and team sizing
+still come from the Effort and Team Estimator.
+
 ### Step 9 — Assemble Into the Chosen Format
 
-Map Steps 4–8's content into either the partner's own format (Step 0) or
+Map Steps 4–8A's content into either the partner's own format (Step 0) or
 the generic fallback (Step 1). Named account, objectives, deliverables,
 assumptions, exclusions, and indicative timeline must all be present and
 clearly labeled regardless of which format is used — these six are never
-optional, even inside a partner's custom template.
+optional, even inside a partner's custom template. The delivery plan
+(approach and milestones, acceptance criteria, change control, risks,
+support) is included too; if the partner's template has no place for part
+of it, add it as its own section rather than dropping it.
 
 ### Step 10 — Present and Flag
 
@@ -248,15 +366,16 @@ that without asking again. Then:
   document to their customer; use their branding only if they provide it.
 - **Carry the flags into the file:** if the SOW is provisional (Step 2), put
   a clear "PROVISIONAL DRAFT — pending follow-up call" line at the top of
-  the document; keep the Assumptions wording ("please confirm"), the
-  "indicative" label on the timeline, and the Commercial Terms placeholder.
+  the document; keep any "To be confirmed with the customer before kickoff"
+  items clearly marked, the "indicative" label on the timeline, and the
+  Commercial Terms placeholder.
 - **File name and location:** `SOW - {Account Name} - {YYYY-MM-DD}.docx` /
   `.pdf`, saved in the current working directory unless the partner names
   another folder. Never overwrite an existing file with the same name —
   add a version suffix (`v2`, `v3`) instead.
 - **Report back** with the file path(s), and remind the partner to review
-  it before sending — especially the Assumptions and Commercial Terms
-  placeholder.
+  it before sending — especially any "To be confirmed" items and the
+  Commercial Terms placeholder.
 
 The skill isn't finished until the file exists and its path has been
 reported.
@@ -267,8 +386,8 @@ reported.
 
 ### arise-mcp — read-only
 
-list_apps → used only in Step 3, to cite real capabilities in Deliverables
-list_operations → used only in Step 3, same purpose
+list_apps → Step 1A, to check each application is available in appse ai; Step 3, to cite real capabilities in Deliverables
+list_operations → used only in Step 3, to cite real capabilities in Deliverables
 
 No write tool is used by this skill. Never call `create_workflow`,
 `save_workflow`, or anything that modifies pricing, contracts, or the
@@ -301,10 +420,22 @@ existing file.
 
 ## Output Rules
 
+- **No assumptions.** Anything unclear about the scenario, business use
+  case, applications, or scope — or an application that isn't available in
+  appse ai — is asked in one numbered round (Step 1A) before drafting.
+  Never fill a gap with a guess or park it as an assumption; if the partner
+  says to proceed without an answer, mark it "To be confirmed with the
+  customer before kickoff"
+- **Objectives are clear and measurable**, and customizations are always
+  asked about — agreed ones become deliverables, the rest are excluded
+- **The plan is industry-standard and convincing:** phased approach and
+  milestones, measurable acceptance criteria, change control, real risks
+  with mitigations, and a hypercare window — specific, confident, never
+  overstated
 - A Discovery Summary is recommended, not required — if the partner gives
   raw material, offer once to create one; if they'd rather draft directly,
-  draft from the material, with anything inferred going into Assumptions.
-  Never invent requirements from a one-line request
+  draft from the material, turning anything you'd have to infer into Step
+  1A questions. Never invent requirements from a one-line request
 - If the request is to build a workflow rather than write a SOW, ask which
   they want — don't treat a workflow scenario as SOW input
 - Refer to the input as the "Discovery Summary" when talking to the
@@ -315,7 +446,9 @@ existing file.
 - Never draft pricing or commercial terms — reference them as a
   placeholder only
 - Never let an [Inferred] fact from the digest appear as a firm deliverable
-  — it becomes an Assumption instead
+  — ask the partner to confirm it first (Step 1A). The Assumptions section
+  holds only agreed delivery conditions (access, environments, sign-off
+  times), never guesses about scope
 - Never silently proceed on a digest whose readiness signal is "Needs a
   follow-up call" — flag it and get explicit confirmation to proceed anyway
 - Never fabricate a named appse ai capability or connector to make
@@ -326,7 +459,7 @@ existing file.
   committed date or resourced estimate
 - The final output is always a file — ask only Word, PDF, or both, then
   build it from the SOW as approved in chat, carrying the provisional flag,
-  Assumptions wording, and Commercial Terms placeholder into it. The run
+  any "To be confirmed" items, and the Commercial Terms placeholder into it. The run
   isn't complete until the file path is reported
 - On being asked to stop, stop immediately and report exactly what has and
   hasn't been drafted so far
