@@ -2,7 +2,8 @@
 name: sow-generator
 description: >
   Turns a Requirement Digest into a formal Scope of Work — named account,
-  objectives, deliverables, assumptions, exclusions, indicative timeline —
+  objectives, requirements, dependencies, out-of-scope items, indicative
+  timeline —
   via arise-mcp app-catalog cross-checks. Use when a partner has a completed
   Requirement Digest and needs it turned into a customer-facing SOW, or asks
   to "draft a SOW," "write the scope of work," or "turn this digest into a
@@ -35,8 +36,9 @@ the SOW has no way to tell the difference unless the document tells them.
 
 **Core principles (apply to every SOW):**
 1. **No guessed content.** If anything about the scenario, the business use
-   case, the applications, or the scope is unclear — or an application isn't
-   available in appse ai — ask the partner before drafting (Step 1A). Never
+   case, the applications, or the scope is unclear, ask the partner before
+   drafting (Step 1A). (An application that isn't available in appse ai
+   doesn't block the SOW — its connection becomes part of the scope.) Never
    fill a gap with a guess, and never move a guess into the SOW as an
    "assumption" for the customer to catch later.
 2. **Clear, measurable objectives** — each tied to a business outcome and a
@@ -75,15 +77,15 @@ separate process entirely (see Step 8).
 > 2. Duplicate-order prevention on the SAP B1 side
 > 3. Customer/Business Partner record creation for new Shopify customers
 >
-> **Project Assumptions & Dependencies:** _(agreed delivery conditions — not guesses about scope)_
+> **Dependencies:** _(what the customer provides — each one needed for this scope)_
 >
-> - Customer provides SAP Business One and Shopify admin access, and a test environment, before build starts
-> - Customer nominates a business owner to join UAT and sign off within 5 business days of each test cycle
+> - SAP Business One and Shopify admin access, and a test environment, before build starts
+> - A business owner for UAT, with sign-off within 5 business days of each test cycle
 >
-> **Exclusions:**
+> **Out of Scope:** _(only items the customer might reasonably expect to be included)_
 >
-> - Historical/backfilled orders prior to go-live are out of scope
-> - Custom reporting or dashboards beyond what's listed above
+> - Migrating historical orders placed before go-live
+> - Returns and refunds (candidate for a later phase)
 >
 > **Indicative Timeline:** 2–3 weeks from kickoff to go-live _(detailed effort and team sizing to follow from the Effort and Team Estimator)_
 
@@ -152,11 +154,12 @@ model (Steps 4–8 below map onto it directly):
 1. Header — account name, date, deal/opportunity reference
 2. Background — brief context from the digest (one short paragraph)
 3. Objectives — measurable business outcomes (Step 4)
-4. Scope of Services / Deliverables — including agreed customizations
+4. Requirements & Deliverables — the confirmed scope, including agreed
+   customizations (Step 5)
 5. Project Approach & Milestones — the phased delivery plan (Step 8A)
-6. Project Assumptions & Dependencies — agreed delivery conditions only
-   (Step 6), never guesses about scope
-7. Exclusions
+6. Dependencies — what the customer must provide for this scope (Step 6)
+7. Out of Scope — short, and only items the customer might reasonably
+   expect to be included (Step 7)
 8. Indicative Timeline
 9. Roles and Responsibilities — partner vs. customer vs. appse ai, reflecting
    the real support split (partner owns workflow logic, mappings, and
@@ -170,6 +173,21 @@ model (Steps 4–8 below map onto it directly):
 13. Support & Hypercare — the post-go-live support window and what it covers
 14. Commercial Terms — a reference/placeholder line only ("commercial terms
     per the accompanying quote/contract"); this skill never drafts pricing
+15. Open Items to Confirm Before Kickoff — **only if** the partner chose to
+    proceed without answering something in Step 1A; otherwise omit
+
+**There is no "Assumptions" section, and the word "assumed" never appears
+in the SOW.** Anything unknown is asked before drafting (Step 1A); anything
+the partner chooses to leave open goes under Open Items, never mixed into
+Requirements or Dependencies.
+
+**Include only what's necessary.** Every line must come from the partner's
+input, a confirmed answer, or a dependency or risk this specific scope
+actually creates — no boilerplate (e.g. "third parties respond within
+standard SLAs"), no generic risks, no filler exclusions. If a section would
+only contain filler, keep it to one line or leave it out (except the
+always-present sections in Step 9). If you think something important is
+missing, ask the partner rather than adding it on your own.
 
 ### Step 1A — Clarify Everything Before Drafting (no assumptions)
 
@@ -201,10 +219,10 @@ where sensible, the options. Check at least:
 Rules:
 - **Don't draft until the answers are in.** If the partner answers only
   some, say which are still open and ask again for those.
-- If the partner explicitly says to proceed without an answer, mark that
-  point in the SOW as **"To be confirmed with the customer before
-  kickoff"** — a visible open item, never a silent assumption, and never a
-  firm deliverable.
+- If the partner explicitly says to proceed without an answer, list that
+  point under **"Open Items to Confirm Before Kickoff"** — a visible open
+  item, never written as an assumption, never mixed into Requirements or
+  Dependencies, and never a firm deliverable.
 - Don't ask what the input already states clearly.
 
 **Ask like a senior pre-sales consultant — propose, then confirm.** Never
@@ -216,8 +234,10 @@ confirm or adjust:
   "go ahead" and settle most points at once. Say briefly why you recommend
   it.
 - **Sort the questions before asking:**
-  - **Must ask** — blocks an honest draft and has no safe default: the scope
-    of a broad request, application edition/deployment where it changes
+  - **Must ask** — blocks an honest draft and has no safe default: **the
+    scope, whenever the input doesn't make it clear** (which processes,
+    records, directions, and systems are in and out — not just for broad
+    requests), application edition/deployment where it changes
     scope, customizations, the go-live constraint, how an unavailable app
     can be reached (API, documentation, access), and the **success
     metrics** — how the customer will measure the project's success. Ask
@@ -229,8 +249,8 @@ confirm or adjust:
     State your proposal; it stands unless the partner changes it.
   - **Can wait** — useful but not needed to draft: header details (customer
     name, reference), volumes, background on today's process. Don't ask
-    these up front; use a placeholder or "To be confirmed with the customer
-    before kickoff".
+    these up front; use a placeholder (e.g. `[Customer name]`) or list them
+    under Open Items to Confirm Before Kickoff.
 - **Aim for five questions or fewer**, ranked by impact. If there are more,
   move the lower-impact ones into "propose and confirm" or "can wait" —
   never drop a genuine must-ask just to hit the number.
@@ -239,6 +259,9 @@ confirm or adjust:
   **recommended scope table** from standard practice for that app pair —
   each entity with in scope / later phase / out, flow direction, and which
   system owns the master record — and ask the partner to confirm or edit it.
+  **Scope is never accepted by silence:** unlike "propose and confirm"
+  items, a proposed scope doesn't stand unless the partner changes it — wait
+  for them to confirm or edit it before drafting.
   For example, for e-commerce ↔ ERP B2B: customers/companies, items,
   inventory, and price lists flow ERP → store (ERP is master); orders flow
   store → ERP; shipment status and invoices flow ERP → store; quotes and
@@ -287,7 +310,7 @@ reached does. Scope it the way an integration specialist would:
 - **Put it early in the plan:** a technical assessment of the app's API at
   the start of the Discovery & design phase, before the build commits to
   it.
-- **Add its dependencies** under Project Assumptions & Dependencies — API
+- **Add its dependencies** under Dependencies — API
   documentation, a test/sandbox instance, credentials, and the app vendor
   or owner's availability.
 - **Add its real risks** under Risks & Mitigations — e.g. missing or
@@ -298,8 +321,8 @@ reached does. Scope it the way an integration specialist would:
 - **Ask only what changes the scope**, with a recommendation — e.g. "Does
   MedFlow have a REST API with documentation? (Recommended: confirm
   before kickoff; the SOW includes an API assessment either way.)" If the
-  partner doesn't know, mark it "To be confirmed with the customer before
-  kickoff" and still draft.
+  partner doesn't know, list it under Open Items to Confirm Before Kickoff
+  and still draft.
 
 ### Step 4 — Draft Objectives
 
@@ -322,7 +345,7 @@ mentioned: *"Are any customizations needed — custom fields, business rules
 or transformations, special cases (e.g. B2B pricing, multi-warehouse),
 custom reports, or a connector for an app that isn't available?"*
 Agreed customizations become explicit deliverables; anything declined or
-not yet decided goes under Exclusions ("Customizations beyond those listed
+not yet decided goes under Out of Scope ("Customizations beyond those listed
 above").
 
 ### Step 5 — Draft Deliverables, Tagged by Confidence Source
@@ -335,25 +358,30 @@ into the committed section of the document. Write each deliverable
 specifically: what is built, between which systems, for which records, and
 the observable result.
 
-### Step 6 — Draft Project Assumptions & Dependencies (agreed conditions only)
+### Step 6 — Draft Dependencies (what the customer provides)
 
-**[Inferred] facts from the digest do not go here** — they were turned into
-Step 1A questions. This section holds only standard, agreed **delivery
-conditions** that every SOW needs, stated so the customer can see their side
-of the work — e.g. access to each application and a test environment before
-build starts, a named business owner for UAT sign-off within an agreed
-number of days, sample/test data, availability of the customer's IT contact,
-third-party vendors providing what's needed on time. Anything the partner
-told you to proceed without in Step 1A appears as **"To be confirmed with
-the customer before kickoff"**, clearly marked — never phrased as settled.
+This section lists what the customer must provide for **this** scope to be
+delivered — stated as their side of the work, not as assumptions: e.g.
+access to each application and a test environment before build starts, a
+named business owner for UAT sign-off within an agreed number of days,
+representative test data, master data in place before a dependent flow goes
+live, IT/security approvals needed for connectivity. Include a dependency
+only if this scope actually needs it — no boilerplate.
 
-### Step 7 — Draft Exclusions
+**What never goes here:** unconfirmed facts about scope or systems (those
+are Step 1A questions, e.g. an application's edition or deployment), scope
+decisions (those go in Requirements & Deliverables once confirmed), and
+anything left open (those go in Open Items to Confirm Before Kickoff).
 
-Derived from two sources: anything the digest tagged **[Missing]** that's
-materially relevant (state it's excluded pending clarification, not just
-silently absent), plus standard exclusions appropriate to the deal type
-(e.g. historical/backfilled data, customizations not explicitly listed,
-production support beyond an agreed window).
+### Step 7 — Draft Out of Scope (short)
+
+List only items the customer might **reasonably expect to be included** but
+aren't — e.g. a related process deferred to a later phase, migrating
+historical data, customizations beyond those agreed, support beyond the
+hypercare window. This protects both sides from scope creep, which is why
+industry-standard SOWs include it. Keep it short and specific to this
+scope; never pad it with generic items. A [Missing] point from the digest
+is a Step 1A question, not an automatic exclusion.
 
 ### Step 8 — Draft Indicative Timeline
 
@@ -401,10 +429,11 @@ still come from the Effort and Team Estimator.
 ### Step 9 — Assemble Into the Chosen Format
 
 Map Steps 4–8A's content into either the partner's own format (Step 0) or
-the generic fallback (Step 1). Named account, objectives, deliverables,
-assumptions, exclusions, and indicative timeline must all be present and
-clearly labeled regardless of which format is used — these six are never
-optional, even inside a partner's custom template. The delivery plan
+the generic fallback (Step 1). Named account, objectives with success
+metrics, requirements & deliverables, dependencies, out of scope (short),
+and indicative timeline must all be present and clearly labeled regardless
+of which format is used — these six are never optional, even inside a
+partner's custom template. The delivery plan
 (approach and milestones, acceptance criteria, change control, risks,
 support) is included too; if the partner's template has no place for part
 of it, add it as its own section rather than dropping it.
@@ -446,16 +475,16 @@ that without asking again. Then:
   document to their customer; use their branding only if they provide it.
 - **Carry the flags into the file:** if the SOW is provisional (Step 2), put
   a clear "PROVISIONAL DRAFT — pending follow-up call" line at the top of
-  the document; keep any "To be confirmed with the customer before kickoff"
-  items clearly marked, the "indicative" label on the timeline, and the
-  Commercial Terms placeholder.
+  the document; keep any Open Items to Confirm Before Kickoff clearly
+  marked, the "indicative" label on the timeline, and the Commercial Terms
+  placeholder.
 - **File name and location:** `SOW - {Account Name} - {YYYY-MM-DD}.docx` /
   `.pdf`, saved in the current working directory unless the partner names
   another folder. Never overwrite an existing file with the same name —
   add a version suffix (`v2`, `v3`) instead.
 - **Report back** with the file path(s), and remind the partner to review
-  it before sending — especially any "To be confirmed" items and the
-  Commercial Terms placeholder.
+  it before sending — especially any Open Items and the Commercial Terms
+  placeholder.
 
 The skill isn't finished until the file exists and its path has been
 reported.
@@ -508,8 +537,12 @@ existing file.
   connection to that app as an explicit deliverable, with its API
   assessment, dependencies, risks, and timeline impact (Step 3).
   Never fill a gap with a guess or park it as an assumption; if the partner
-  says to proceed without an answer, mark it "To be confirmed with the
-  customer before kickoff"
+  says to proceed without an answer, list it under "Open Items to Confirm
+  Before Kickoff". The SOW has no Assumptions section and never says
+  "assumed"
+- **Only what's necessary** — every line comes from the partner's input, a
+  confirmed answer, or a dependency or risk this scope actually creates; no
+  boilerplate or filler. If something seems missing, ask
 - **Propose, then confirm — never a blank checklist.** Every question has a
   recommended answer from industry practice; five must-ask questions or
   fewer, ranked by impact; header details, volumes, and background can wait.
@@ -535,20 +568,21 @@ existing file.
 - Never draft pricing or commercial terms — reference them as a
   placeholder only
 - Never let an [Inferred] fact from the digest appear as a firm deliverable
-  — ask the partner to confirm it first (Step 1A). The Assumptions section
-  holds only agreed delivery conditions (access, environments, sign-off
-  times), never guesses about scope
+  — ask the partner to confirm it first (Step 1A). Dependencies hold only
+  what the customer must provide for this scope (access, environments,
+  data, sign-off), never guesses about scope
 - Never silently proceed on a digest whose readiness signal is "Needs a
   follow-up call" — flag it and get explicit confirmation to proceed anyway
 - Never fabricate a named appse ai capability or connector to make
   Deliverables sound more specific than what's actually confirmed
-- Named account, objectives, deliverables, assumptions, exclusions, and
-  indicative timeline are always present, regardless of format
+- Named account, objectives with success metrics, requirements &
+  deliverables, dependencies, a short out-of-scope list, and indicative
+  timeline are always present, regardless of format
 - Indicative Timeline is always labeled as indicative, never presented as a
   committed date or resourced estimate
 - The final output is always a file — ask only Word, PDF, or both, then
   build it from the SOW as approved in chat, carrying the provisional flag,
-  any "To be confirmed" items, and the Commercial Terms placeholder into it. The run
+  any Open Items, and the Commercial Terms placeholder into it. The run
   isn't complete until the file path is reported
 - On being asked to stop, stop immediately and report exactly what has and
   hasn't been drafted so far
