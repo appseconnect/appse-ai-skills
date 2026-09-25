@@ -261,6 +261,18 @@ the internal test org, 2026-09-24.
   was correctly identified as required. Led to the required-field gate
   (SKILL.md, end of Step 8) and the confirmed-quirks list in
   `guide-field-mapping.md`.
+- **(2026-09-26) — SAP B1 `Get Item(s)` output wrapper, same class of bug
+  as the Shopify one below, different shape.** A "Get SAP Item" node feeds
+  an "Is Sales Item" Filter; the Filter mapped `{{$payload.ItemCode}}`,
+  which resolved to `null` (no error — just silently wrong, worse than a
+  hard failure since a Filter can quietly take the wrong branch on `null`).
+  Service Layer get/list actions wrap every record in an OData `value`
+  array — `{ "odata.metadata": ..., value: [ {...} ] }` — the fix was
+  `{{$payload.value[idx].ItemCode}}`. Confirms the chained-action-output
+  rule (added after the Shopify incident below) was written too narrowly —
+  it said "create/update action," but a plain get/list read has the exact
+  same problem. Broadened to cover any action's output, not just
+  writes/chained-creates.
 - **Workflow 25 (2026-09-25) — Shopify `Create Product` output wrapper.** A
   follow-up node read `payload.id` to get the newly created product's ID;
   the real output is `{ userErrors, product: { id, ... } }`, so the

@@ -183,3 +183,15 @@ only when a build actually confirms one; never add a guess here.
   came through empty. Check every Shopify GraphQL action's real output
   shape the same way before writing a read-back expression — don't assume
   this one example covers every action.
+- **SAP Business One — Service Layer get/list actions wrap every record in
+  an OData `value` array.** `Get Item(s)` (and the same pattern applies to
+  other Service Layer get/list actions) returns
+  `{ "odata.metadata": ..., value: [ { ItemCode, ItemName, ... } ] }` — the
+  record is `value[0]` (or the loop index inside a Splitter), never
+  top-level `payload.ItemCode`. Confirmed failure: a Filter mapped
+  `{{$payload.ItemCode}}`, resolved to `null` (no error, just silently
+  wrong), corrected to `{{$payload.value[idx].ItemCode}}`. This is the same
+  envelope problem as the Shopify entry above, just a different app and a
+  different wrapper shape (`value[]` array, not a named object) — check
+  every SAP B1 get/list action's real output the same way; don't assume
+  either example covers the other.

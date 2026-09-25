@@ -536,16 +536,22 @@ those mappings "not cross-checked against documentation".
 - **Chained-action output fields need the same check as input fields.** When a
   later node in *this* build reads a field from an **earlier node's own
   output** — not the trigger — that's a different question from what the
-  target action requires as input, and just as easy to get wrong: a
-  create/update action's real result is often wrapped in an object named
-  after the entity (e.g. Shopify's `Create Product` returns `{ userErrors,
-  product: { id, title, variants: {...} } }`, not a flat `id`). Confirm the
+  target action requires as input, and just as easy to get wrong: **any**
+  action's real result — a create, an update, or a plain **get/list read**
+  — can wrap the actual record in an envelope instead of returning it flat.
+  Confirmed twice, two different shapes: Shopify's `Create Product` wraps
+  the record under the entity's name (`{ userErrors, product: { id, ... }
+  }`); SAP B1's Service Layer get/list actions (e.g. `Get Item(s)`) wrap
+  every record in an OData `value` array (`{ odata.metadata, value: [
+  { ItemCode, ... } ] }`) — the field is `value[0].ItemCode` (or the loop
+  index inside a Splitter), never top-level `payload.ItemCode`. Confirm the
   actual path from `query-docs`'s worked example Result JSON for that
   specific action, or a real `Run` output if the node has already executed
   once — never assume it sits at the top level of `payload` just because the
-  input side does. If neither source is available, treat the path as an
-  explicit assumption (Step 9) and name the one test that would confirm or
-  break it — same discipline already required for other proposed mappings.
+  input side does, or because a *different* action's output didn't need
+  this. If neither source is available, treat the path as an explicit
+  assumption (Step 9) and name the one test that would confirm or break it
+  — same discipline already required for other proposed mappings.
 - Unresolved inner shape of an object/array, a field the connector requires
   but the partner wants auto-generated, or a required source that won't
   exist (e.g. media) → follow `guide-field-mapping.md`.
