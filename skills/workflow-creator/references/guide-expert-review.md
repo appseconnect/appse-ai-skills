@@ -13,17 +13,18 @@ changes what the partner asked for into a "must ask" question.
 
 ## 1. Is every node reading the record that actually reached it?
 
-**Real failure — the 53,080-record incident (Workflow 12, 2026-09-24,
-Shopify → Business Central create-or-update customers).** It was built
-straight from the reference pattern, without this review. A "skip if no
-email" Filter sat before the customer search, but the search read the email
-from the trigger (`$('Shopify')…`) instead of `$payload`. That bypassed the
-Filter, the email came through blank, and Business Central returned all
-~1,300 customers for each of 40 Shopify customers — 53,080 records into a
-Decision that compared blank with blank, called it a match, and fed the
-update branch. It would have overwritten ~1,300 unrelated customers per run.
+**Real failure — the blank-key incident (a create-or-update customer
+build).** It was built straight from the reference pattern, without this
+review. A "skip if no email" Filter sat before the customer search, but the
+search read the email from the trigger (`$('Shopify')…`) instead of
+`$payload`. That bypassed the Filter, the email came through blank, and the
+target returned **every** customer for each source customer — all fed into
+a Decision that compared blank with blank, called it a match, and passed
+them to the update branch, which would have overwritten unrelated customers
+on every run.
 
-**Real failure — Splitter read from past a Filter (Workflows 15–18).**
+**Real failure — Splitter read from past a Filter (seen in several live
+builds).**
 Trigger → Split Variants → Has SKU → … → Create Item, with Create Item
 reading `$('Split Variants')`. The Has SKU Filter had removed records after
 the Splitter, so the Splitter's records no longer lined up with what reached
@@ -38,7 +39,7 @@ the node. The node directly after a Filter or the trigger uses `$payload`.
 
 ## 2. Does every `$('<name>')` match a node in *this* workflow?
 
-**Real failure (Workflow 15).** The Splitter was named "Split Variants", but
+**Real failure (a live build).** The Splitter was named "Split Variants", but
 the Filter and Create Item referenced `$('Splitter')` — copied from the SKU
 reference file. ItemCode, ItemName, and Price pointed at a node that doesn't
 exist, so they resolved to nothing.
@@ -51,7 +52,7 @@ against the list. Never copy a name from a reference file (`'Splitter'`,
 
 ## 3. What if a match key is empty or missing?
 
-**Real failure:** the 53,080-record incident above — an empty search filter
+**Real failure:** the blank-key incident above — an empty search filter
 meant "return everything".
 
 **Known instance in a reference:** `pattern-find-or-create-customer-then-order.json`
@@ -68,8 +69,8 @@ they're skipped.
 
 ## 4. Does the lookup really prove a match?
 
-**Real failure:** in the 53,080 incident, the Decision treated "something
-came back" as a match — and blank equalled blank.
+**Real failure:** in the blank-key incident, the Decision treated
+"something came back" as a match — and blank equalled blank.
 
 **Check:** the Decision compares the returned key with the source key
 (`equal`), **and** neither side can be blank (guaranteed by the Filter in
@@ -79,7 +80,7 @@ check 3). "The search returned a record" is not proof it's the right one.
 
 ## 5. How many records can this write touch in one run?
 
-**Real failure:** the 53,080 incident — an update fed by an unguarded
+**Real failure:** the blank-key incident — an update fed by an unguarded
 search could touch every customer in the system.
 
 **Check:** if the honest answer is "however many the search returns", the
@@ -136,9 +137,9 @@ which is a "must ask".
 
 ## 10. Does the value's type and code match what the target expects?
 
-**Real failure (Workflow 18).** SAP B1 rejected items with
+**Real failure (a live build).** SAP B1 rejected items with
 `Currency: "USD"` — "BadRequest request body data is invalid" — because
-that company's dollar code is `"$"`. Numeric fields sent as text are a
+that company's dollar code was `"$"`. Numeric fields sent as text are a
 related risk (Shopify sends prices as `"100.00"`).
 
 **Check:** numbers go out through `to_number()`; codes (currency,
@@ -150,11 +151,11 @@ code if it's company-specific.
 
 ## 11. Do you need a Splitter at all?
 
-**Evidence (Workflows 11 and 12):** lookups straight after a trigger ran
-once per record — 10 calls for 10 customers, 40 for 40 — with no Splitter.
+**Evidence (live runs):** lookups straight after a trigger ran once per
+record — one call per customer — with no Splitter.
 Every reference workflow relies on this.
 
-**Real config (Workflow 13):** a Splitter needs `fields_to_split` (e.g.
+**Real config (seen in a live build):** a Splitter needs `fields_to_split` (e.g.
 `"variants.nodes"`) and `include` (e.g. `"no_other_fields"`) set on `data`
 — the older reference file saved it with empty `properties`, which hid
 this.

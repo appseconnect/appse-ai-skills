@@ -2,6 +2,8 @@
 
 *Internal maintainer notes — not partner-facing, and not needed during a normal build. Update as testing reveals more. If a limitation ever surfaces in a partner conversation, phrase it per SKILL.md's Tone rules (plain business language, no internal tool names).*
 
+*Kept in `docs/`, outside `skills/workflow-creator/`, so it is **not** included when the skill or plugin is packaged for external partners (moved 2026-09-25). The skill files describe the lessons generically; the internal incident details behind them are in the Incident log at the end of this file.*
+
 *Last updated: 2026-09-24.*
 
 ---
@@ -191,3 +193,50 @@
   skill (per the design doc's Workflow Reviewer / UAT ideas). Partly covered
   today by Step 10's post-save verification and Step 11's single-record
   test suggestion.
+
+---
+
+## Incident log (internal — the evidence behind the skill's generic lessons)
+
+The skill files state these lessons without internal workflow numbers,
+record counts, or dates. The full detail is kept here. All builds were in
+the internal test org, 2026-09-24.
+
+- **Workflow 12 — the 53,080-record incident (Shopify → Business Central
+  create-or-update customers).** Built straight from the reference pattern,
+  without the expert review. A "skip if no email" Filter sat before the
+  customer search, but the search read the email from the trigger
+  (`$('Shopify')…`) instead of `$payload`. That bypassed the Filter, the
+  email came through blank, and Business Central returned all ~1,300
+  customers for each of 40 Shopify customers — 53,080 records into a
+  Decision that compared blank with blank, called it a match, and fed the
+  update branch. It would have overwritten ~1,300 unrelated customers per
+  run. (Workflow 11, built earlier the same day with the same gap, did
+  update ~3,800 records across three test runs before it was caught.) The
+  `is_not_empty` Filter operator was first set in the portal UI on this
+  workflow.
+- **Workflows 15–18 — Splitter read from past a Filter.** Trigger → Split
+  Variants → Has SKU → … → Create Item, with Create Item reading
+  `$('Split Variants')` (or `$('Splitter')`). The Has SKU Filter had removed
+  records after the Splitter, so the Splitter's records no longer lined up
+  with what reached Create Item — its first record could be a variant with
+  no SKU, giving `null`.
+- **Workflow 15 — node name copied from a reference.** The Splitter was
+  named "Split Variants", but the Filter and Create Item referenced
+  `$('Splitter')`, copied from the SKU reference file, so ItemCode,
+  ItemName, and Price pointed at a node that doesn't exist.
+- **Workflow 13 — Splitter config found.** Its saved JSON showed the real
+  Splitter settings: `data.fields_to_split` (e.g. `"variants.nodes"`) and
+  `data.include` (`"no_other_fields"`) — the older reference file had saved
+  it with empty `properties`, which hid this.
+- **Workflows 11 and 12 — per-record iteration evidence.** Lookups straight
+  after a trigger ran once per record (10 calls for 10 customers, 40 for 40),
+  with no Splitter.
+- **Workflow 18 — SAP currency code.** SAP B1 rejected items with
+  `Currency: "USD"` ("BadRequest request body data is invalid") because
+  that company's dollar code is `"$"`. Numbers were switched to
+  `to_number()` at the same time; whether text values alone would fail is
+  untested.
+- **Workflow 22 — items assumed to exist.** The Shopify → SAP order flow
+  checked the customer but not each order line's product; one new SKU would
+  fail the whole order.

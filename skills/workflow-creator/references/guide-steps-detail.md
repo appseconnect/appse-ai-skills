@@ -120,7 +120,7 @@ hard to undo if wrong. These are the only numbered questions in Step 9.
   reserve questions for genuine, live decisions.
 - **When asking for a code, ask for it as defined in the target system**
   (e.g. "the currency code as set up in SAP under Administration → Setup →
-  Financials → Currencies"), not the general name — Workflow 18 failed on
+  Financials → Currencies"), not the general name — a live build failed on
   `"USD"` where that SAP company's code was `"$"`.
 
 ---

@@ -70,7 +70,6 @@ needs them, and ask every open question in one round inside Step 9.
 | `guide-building-blocks.md` | Composing a shape, choosing a reference pattern, or a docs lookup acting oddly |
 | `pattern-*.json` | Only if `conventions.md` doesn't show a detail you need for that exact pattern — read one, not all |
 | `guide-steps-detail.md` | Full wording for Tone, Asking Questions, and Output Rules, when a condensed rule here isn't enough |
-| `known-limits.md` | Maintainer notes — not needed during a normal build |
 
 ---
 
@@ -255,6 +254,10 @@ node and ask what a real integration expert would ask:
 - **What data will the first run pick up?** A trigger start date in the past
   processes every old record since then. New workflows normally start from
   now; a backfill is a deliberate choice the partner makes.
+- **Will the target accept every value?** For each field, in whichever app
+  it's going to: length, format, allowed values, uniqueness, fields
+  required together (Step 6). Built values — prefixes, joined text,
+  converted numbers — are where this breaks most often.
 - **Could this overwrite good data with bad?** A blank optional field on an
   update can wipe a value the target already holds.
 - **Could this loop or duplicate?** If a sync also runs the other way, or
@@ -385,8 +388,7 @@ Call `list_organizations`, `list_apps`, `list_credentials`, and
   that has no credential. If an app has two catalog variants (e.g. SAP B1
   cloud vs. on-prem) and only one has a credential, use it and say so — no
   question. Don't block on the `isValidated` flag (meaning unconfirmed;
-  temporary internal override — don't mention it to the partner; detail in
-  `known-limits.md`).
+  temporary internal override — don't mention it to the partner).
 - **Duplicates (Step 3):** a workflow already exists for the same source
   app, target app, and entity → add "reuse/edit it, or create a new one?" to
   the Step 9 questions. Never duplicate silently.
@@ -448,12 +450,39 @@ those mappings "not cross-checked against documentation".
   (`"100.00"`). Wrap them with the documented `to_number()`, e.g.
   `{{to_number($('Has SKU').payload.price)}}`, and give numeric constants as
   `{{to_number('1')}}`, matching the types in the target's real records.
+- **Check every value will be accepted by the target app — whatever the
+  app.** Valid JSON and the right type aren't enough; every target system
+  enforces its own field rules. For each mapped field, check:
+  1. **Length** — maximum characters (codes and IDs are often short:
+     15–20 is common for customer/item numbers in ERPs).
+  2. **Format** — dates (date-only vs. date-time, which pattern), decimals
+     and precision, phone/email/postcode formats, case sensitivity.
+  3. **Allowed values** — enums and codes the app defines (status values,
+     type flags like `tYES`/`tNO`, country/state/currency codes as set up
+     in that system).
+  4. **Uniqueness** — keys that must not repeat (record numbers, SKUs,
+     address names per record).
+  5. **Required together** — fields that only work as a set (e.g. an
+     address type with an address name).
+
+  Sources, in order: the operation detail, the app's docs (field
+  descriptions and real example records), the field-limits table in
+  `conventions.md`, then the partner. For every value you **build**
+  (prefix + ID, joined names, formatted numbers), work out its longest
+  realistic result and check it against these rules — e.g. SAP B1's
+  `CardCode` allows 15 characters, so `"SHOP-" + a 13-digit Shopify ID`
+  (18) is rejected. If a value can break a rule, fix it in the design:
+  shorten or reformat it, map to an allowed value, or use the target's own
+  numbering/defaults. **Codes for new master records** (customer numbers,
+  item codes, account numbers) follow each company's own convention — if
+  the partner hasn't stated one, make it a "must ask" with a recommended
+  format that fits the limit. If a rule is unknown for this app, say so in
+  Assumptions rather than guessing.
 - **Codes must exist in the target system.** A code field (currency,
   warehouse, tax code, price list) must use a value that's actually defined
-  in that system — not the general name. Confirmed failure (Workflow 18,
-  2026-09-24): SAP B1 rejected items with `Currency: "USD"` — "BadRequest
-  request body data is invalid" — because that company's dollar code is
-  `"$"`. When you ask the partner for such a setting, ask for the exact code
+  in that system — not the general name. Confirmed failure in a live build:
+  SAP B1 rejected items with `Currency: "USD"` — "BadRequest request body
+  data is invalid" — because that company's dollar code was `"$"`. When you ask the partner for such a setting, ask for the exact code
   as defined in the target (e.g. SAP: Administration → Setup → Financials →
   Currencies), and check a real record's value in the docs first.
 - **Company-specific settings** (currency, price list, warehouse, item
@@ -496,6 +525,17 @@ Apply structure only — never a reference's field values, credential IDs,
 node names, or app-specific mappings. A custom or mixed shape is fine — say
 so in Step 9; stop and ask only if a needed node type has no confirmed JSON
 shape.
+
+**Branch order follows creation order.** When several branches leave the
+same node, the platform runs them one after another — the branch whose
+nodes were **added first runs first**, and it finishes before the next
+starts. In the saved JSON, creation order is the order of the `nodes` array
+(and their `idx` numbers). So when one branch must finish before another —
+e.g. create missing items or customers before creating the order — put that
+branch's nodes **first in the `nodes` array with the lower `idx` numbers**,
+and list its edge from the shared node first in `edges`. Master data first,
+transactions after. Say the order in Step 9 ("items are checked and created
+first, then the order"), and check it in Step 10.
 
 **Then review the design as an integration expert** (Think Like an
 Integration Expert; full version in `guide-expert-review.md` for anything
@@ -580,7 +620,11 @@ check each reference against the list), **that no `$('X')` has a Filter
 between X and the node using it (if one does, switch it to the last
 Filter — see the Filter rule), that every
 mapping reads from the node that actually passes the record to it (not the
-trigger, when a Filter or Decision sits in between), and that the
+trigger, when a Filter or Decision sits in between), that any branch which
+must run first (master data before transactions) has the earlier node
+positions and lower `idx`, that every value — especially built ones
+(prefix + ID, joined text, converted numbers) — meets the target app's field
+rules (length, format, allowed values, uniqueness), and that the
 safeguards from your expert review (listed in Step 9) actually made it into
 the saved flow.** If anything is missing, fix it with `save_workflow` and
 re-check; report anything still wrong — do not tell the partner the build
@@ -638,8 +682,7 @@ of what an internal tool does or doesn't support (see Tone).
   A separate grant from arise-mcp — never use one to justify expanding the
   other.
 - **Local files:** this skill's own `references/` folder only — the
-  `pattern-*.json` files, `conventions.md`, and the `guide-*.md` /
-  `known-limits.md` notes. Never read or infer structure from anywhere else.
+  `pattern-*.json` files, `conventions.md`, and the `guide-*.md` notes. Never read or infer structure from anywhere else.
 - Never expand tool access mid-run — if the tools aren't enough, stop and
   say so in plain language.
 
@@ -648,8 +691,8 @@ of what an internal tool does or doesn't support (see Tone).
 ## Known Limits
 
 Maintainer notes (validated scenarios, open platform questions, deferred
-ideas, the hardcoded workflow-link base URL) live in
-`references/known-limits.md` — not needed during a normal build.
+ideas) are kept outside this skill, in the repository's maintainer docs —
+not needed during a normal build.
 
 ---
 

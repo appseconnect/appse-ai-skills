@@ -114,8 +114,9 @@ without a parent (customer, business partner) that may not exist yet. This
 differs from create-or-update: the "found" branch does not update the
 parent, it just reuses it.
 
-**No guard on a blank source email — same class as Workflow 12. Expert
-review must add a Filter before the customer search.**
+**No guard on a blank source email — the same failure class as a blank
+search key returning every record. Expert review must add a Filter before
+the customer search.**
 
 **Corrected from the original export (2026-09-24), not unmodified:**
 
@@ -145,8 +146,7 @@ field values — never copy them; resolve them fresh per Steps 6–7.
    **Don't copy its `$('Splitter')` references** in the Filter and Create
    nodes: they read the Splitter from past a Filter. When a Filter sits in
    between, read the element from the **last Filter** (e.g.
-   `$('Has SKU').payload.sku`) — Workflows 15–18 (2026-09-24) got `null`
-   by copying this.
+   `$('Has SKU').payload.sku`) — live builds got `null` by copying this.
 2. Single-criterion entity resolution (email only) for Business Partner —
    dedupe-and-skip style, not a fallback cascade. Still no confirmed example
    of a true email→phone→name cascade.
@@ -204,8 +204,8 @@ the field mappings. A search node feeding a Decision usually sets
 exact string in expressions. **Never copy a node name from a reference
 file** — `$('Splitter')`, `$('Shopify')`, `$('SAP Business One 2')` are
 those workflows' names. Use the names _you_ gave the nodes in this
-workflow (Workflow 15 broke by referencing `'Splitter'` when its Splitter
-was named "Split Variants").
+workflow (a live build broke by referencing `'Splitter'` when its
+Splitter was named "Split Variants").
 
 **Which node to reference (what the real files show):**
 
@@ -216,7 +216,7 @@ was named "Split Variants").
   source-record fields from the trigger by name (`$('Shopify').payload.…`)
   in two working reference files — that's confirmed.
 - **Not confirmed, and failed once:** a lookup placed after a Filter that
-  read the trigger by name instead of `$payload` (Workflow 12, 2026-09-24).
+  read the trigger by name instead of `$payload` (seen in a live build).
   Its field Preview was blank and the search returned every customer. So:
   whatever sits directly after a Filter uses `$payload`. When a Filter sits
   between the trigger and later nodes, prefer referencing the Filter node
@@ -227,6 +227,18 @@ was named "Split Variants").
 (`"default"`). `sourceHandle` is `"default"`, except out of a
 `DecisionNode`, where it's `"true"` or `"false"`.
 
+**Branch execution order (confirmed by the platform team, 2026-09-25):**
+branches leaving the same node run **sequentially, not in parallel** — the
+branch whose nodes were added first runs first and completes before the
+next begins. In saved JSON, "added first" = earlier in the `nodes` array,
+with lower `idx`. To make one branch run before another (e.g. item
+creation before order creation off the same trigger), give its nodes the
+earlier positions and lower `idx`, and list its edge first. Example shape:
+trigger (idx 1) → item branch (idx 2–6: Splitter → Has SKU → Find Item →
+Item Not In SAP → Create Item) → order branch (idx 7+: Has Email → Find
+Order → … → Create Sales Order). If a node in the first branch fails with
+`on_error: stop`, the run stops before the second branch starts.
+
 ## Condition operators seen in real workflows
 
 Inside `advance_filter`, conditions in the same inner list are **AND**ed
@@ -234,7 +246,7 @@ Inside `advance_filter`, conditions in the same inner list are **AND**ed
 
 - `basic` / `exist` — field exists (`rightValue: ""`)
 - `basic` / `is_not_empty` — field exists **and isn't blank**
-  (`rightValue: ""`); set in the portal UI on Workflow 12, 2026-09-24. Prefer
+  (`rightValue: ""`); seen set in the portal UI on a live build. Prefer
   this over `exist` for guarding match keys.
 - `string` / `equal`, `string` / `not_equal`
 - `number` / `equal`
@@ -257,7 +269,7 @@ Inside `advance_filter`, conditions in the same inner list are **AND**ed
   reference uses `'Splitter'` (the node's original name) even though its
   `current_name` is "Splitting the Items" — which name the platform resolves
   isn't confirmed; check the field Preview.
-  **Config (seen 2026-09-24, Workflow 13):** set on `data` directly, not in
+  **Config (seen in a live build):** set on `data` directly, not in
   `properties` — `"fields_to_split": "variants.nodes"` (path to the list
   inside each record) and `"include": "no_other_fields"` (only the element's
   own fields continue; the parent's fields, e.g. product title, are not
@@ -292,12 +304,40 @@ the live reference workflow and in the portal).
 **Nested required fields the live operation detail doesn't show:**
 | Operation | Array / object | Sub-fields the portal requires | How to fill them |
 |---|---|---|---|
-| SAP B1 `create_item` | `ItemPrices[]` | `PriceList`, `Price`, `Currency` | `Price` from the source price. **`PriceList` and `Currency` are company-specific — ask the partner** (no SAP B1 action returns local currency or price lists; checked 2026-09-24). The SKU reference's `"1"` / `"$$"` were that customer's values — never copy them. **Types (from the documented SAP B1 "Items Updated" record):** `PriceList` integer, `Price` number, `Currency` a currency *code* as defined in SAP (the example uses `"$"`) — send numbers via `to_number()`. **Confirmed cause of Workflow 18's "BadRequest request body data is invalid": `Currency: "USD"` — this SAP company's dollar code is `"$"`.** (Numbers were switched to `to_number()` at the same time; whether text values alone would fail is untested.) |
+| SAP B1 `create_item` | `ItemPrices[]` | `PriceList`, `Price`, `Currency` | `Price` from the source price. **`PriceList` and `Currency` are company-specific — ask the partner** (no SAP B1 action returns local currency or price lists; checked 2026-09-24). The SKU reference's `"1"` / `"$$"` were that customer's values — never copy them. **Types (from the documented SAP B1 "Items Updated" record):** `PriceList` integer, `Price` number, `Currency` a currency *code* as defined in SAP (the example uses `"$"`) — send numbers via `to_number()`. **Confirmed cause of a live "BadRequest request body data is invalid": `Currency: "USD"` — that SAP company's dollar code was `"$"`.** (Numbers were switched to `to_number()` at the same time; whether text values alone would fail is untested.) |
 | D365 BC `create_salesorder` | `salesOrderLines[]` | `lineType`, `quantity`, `unitPrice`, `lineObjectNumber` | `lineType: "Item"` (standard), others from the order lines (find-or-create reference) |
 
 Add rows as new ones are found. Anything company-specific (currency, price
 list, warehouse, tax code, posting group) follows SKILL.md's rule: source
 field → run-time lookup action → ask the partner. Never a reference's value.
+
+**Target field limits (check every built value against these):**
+
+These apply per app — the check itself (length, format, allowed values,
+uniqueness, fields required together) applies to **every** target app; see
+SKILL.md Step 6. The rows below are the limits known so far; for any app or
+field not listed, look for the limit in that app's docs or operation detail,
+and state it as an assumption if it can't be found.
+
+| App / field | Limit | Notes |
+|---|---|---|
+| **Dynamics 365 Business Central** customer/item `number` | 20 characters | BC record numbers are Code[20] — upper-cased by BC |
+| Dynamics 365 BC `displayName` | 100 characters | |
+| Dynamics 365 BC `email` | 80 characters | |
+| Dynamics 365 BC `phoneNumber` | 30 characters | |
+| **Magento 2** product `sku` | 64 characters | Longer SKUs from an ERP are rejected |
+| **Shopify** product `title` | 255 characters | |
+| SAP B1 `CardCode` (business partner) | 15 characters | `SHOP-` + 13-digit Shopify ID = 18 → rejected. `C` + ID = 14 fits; or use `create_businesspartner_autocardcode` (SAP numbering) and read the code from that node's output |
+| SAP B1 `ItemCode` | 50 characters | Older SAP versions: 20 — confirm the version if SKUs are long |
+| SAP B1 `CardName` | 100 characters | First + last name normally fits |
+| SAP B1 `NumAtCard` (customer reference) | 100 characters | Shopify order name/number fits |
+| SAP B1 `Phone1` | 20 characters | Shopify phone numbers with `+` and spaces can exceed — leave out or trim |
+| SAP B1 `BPAddresses[].AddressName` | 50 characters | Must also be unique per address type on the business partner |
+| Shopify numeric IDs (GID suffix) | ~13–14 digits today | Can grow — leave headroom when prefixing |
+
+These are the apps' standard limits; confirm against the customer's
+version when a value is close to a limit (customisations and versions can
+differ). Add rows for any app as new limits are found.
 
 **Common mandatory-field patterns (approach, not literal values):**
 

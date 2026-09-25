@@ -103,7 +103,7 @@ Resolve them in this order only:
    briefly why you're asking (it's specific to their system and nothing
    exposes it). Check a real record in the docs first to show the expected
    format — e.g. SAP B1's "Items Updated" example uses `"Currency": "$"`.
-   Workflow 18 failed on `"USD"` because that SAP company's code was `"$"`.
+   A live build failed on `"USD"` because that SAP company's code was `"$"`.
 
 Never fill these from ladder rung 3 or 4.
 
