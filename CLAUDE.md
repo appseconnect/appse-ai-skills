@@ -25,13 +25,13 @@ Repo layout:
 ```
 .claude/
   settings.json          (shared, committed — pre-approved tool permissions)
-  settings.local.json    (personal, gitignored)
+  settings.local.json    (personal — gitignored, not committed)
   skills/                (copy of skills/ so Claude Code auto-detects them in this repo)
 .claude-plugin/
   marketplace.json
   plugin.json
 .cursor-plugin/          (mirrors .claude-plugin, for portability)
-skills/                  (the plugin-packaged skills — the real distributable)
+skills/                  (the plugin-packaged skills — the real distributable, shipped as-is to partners)
   workflow-creator/
     SKILL.md
     references/
@@ -40,12 +40,14 @@ skills/                  (the plugin-packaged skills — the real distributable)
       guide-expert-review.md
       guide-field-mapping.md
       guide-steps-detail.md
-      known-limits.md
       pattern-*.json     (real exported workflows, structure reference only)
   requirement-digest/        (Nilanjana — not yet reviewed)
   sow-generator/             (Nilanjana — not yet reviewed)
   uat-test-script-generator/ (Nilanjana — not yet reviewed)
+docs/
+  workflow-creator-known-limits.md   (maintainer notes — internal, never packaged with the skill)
 .mcp.json                (project-scoped MCP servers — Context7, for local dev)
+.gitignore               (.claude/settings.local.json, *.zip, *.plugin)
 CLAUDE.md
 README.md
 ```
@@ -59,19 +61,18 @@ when working in this repo. Edit `skills/` first, then resync the whole folder
 Workflow steps (0–11), and Allowed Tools. The `references/guide-*.md` files hold only
 fuller detail behind sections `SKILL.md` condenses. If a guide and `SKILL.md`
 disagree, `SKILL.md` wins — fix the guide. Maintainer notes (validated scenarios, open
-platform questions, deferred ideas) live in `references/known-limits.md`, not here.
+platform questions, deferred ideas) live in `docs/workflow-creator-known-limits.md` —
+deliberately **outside** `skills/`, since anything under a skill's own folder ships to
+partners in the packaged zip/plugin, and this file names internal IDs, hosts, and
+incident details that aren't partner-facing.
 
 **Open items:**
 - `plugin.json`'s `author` uses `eng@appse.ai`, borrowed from other appse ai plugin
   repos. Fine for internal POC; decide a real owner/support address before external
   distribution.
-- The manifests' `skills[]` bug (pointing at the deleted `partner-init`) is **fixed**
-  in `.claude-plugin/plugin.json` (now `./skills/workflow-creator`). Still to check:
-  `.cursor-plugin/plugin.json` and `marketplace.json` match, and whether the three
-  newer skills should be listed once they're reviewed.
 - The three newer skills haven't been reviewed with the same scrutiny as
   `workflow-creator` — review them (tool whitelists, guardrails, no invented shapes)
-  before relying on them.
+  before relying on them, and add them to the manifests' `skills[]` only once reviewed.
 
 ## Technical architecture (confirmed working)
 - **Claude** reasons and follows Skill instructions; has no direct platform access on
@@ -91,8 +92,8 @@ platform questions, deferred ideas) live in `references/known-limits.md`, not he
 
 Per the platform team, Context7 is picked up automatically for partners, with no
 setup on their side (still to confirm with a real run in Cowork — see
-`known-limits.md`). The steps below are only for running the skill locally in Claude
-Code from this repo, where `.mcp.json` provides it:
+`docs/workflow-creator-known-limits.md`). The steps below are only for running the
+skill locally in Claude Code from this repo, where `.mcp.json` provides it:
 
 1. Optional: get a free API key from context7.com/dashboard (it works without one at
    lower rate limits).
@@ -122,26 +123,40 @@ claude mcp add-json --scope project context7 "{\"type\":\"stdio\",\"command\":\"
 ## Testing in Cowork (browser)
 - **arise-mcp:** already available through the same claude.ai connectors — check
   Settings → Connectors.
-- **The skill:** isn't installable from Cowork's plugin catalog yet. Upload it via
-  Settings → Capabilities → Skills → Upload skill, as a `.zip` of the whole
-  `skills/workflow-creator/` folder (with `SKILL.md` at the top level and
-  `references/` included). Always zip from the committed folder, never a pasted copy.
-- **Context7:** expected to work without setup — confirm on the first Cowork run.
+- **Context7:** now also shows up as its own claude.ai connector ("Context7"), separate
+  from the local `.mcp.json` entry used for Claude Code dev — confirm it's authorized
+  there, and that it actually answers `query-docs` calls, on the first real Cowork run.
+- **The skill — packaging path not yet confirmed.** Two possible upload surfaces have
+  come up and neither has been checked against a real Cowork Customize/Settings menu:
+  - A **skill zip**: `SKILL.md` at the top level plus `references/`, uploaded via
+    Settings → Capabilities → Skills → Upload. Zip only `skills/workflow-creator/`.
+  - A **plugin package** (`.claude-plugin/` + `skills/workflow-creator/` + `README.md`,
+    renamed `.plugin`), uploaded via Customize → Plugins → Upload, if that surface
+    exists.
+  Open Cowork's Customize/Settings menu first to see which one is real, then package
+  only `skills/workflow-creator` (never all of `skills/` — the three newer skills
+  aren't reviewed yet) and always zip from the committed folder, never a pasted copy.
 
 ## Tool permissions (`.claude/settings.json`)
-Pre-approved: all read-only arise-mcp tools, `save_workflow`, and Context7's
-`query-docs`. Deliberately **not** pre-approved: `create_workflow` — it uses a
-workflow from the partner's allocation, so it keeps its own prompt as a second safety
-layer after the skill's Step 9 confirmation. `resolve-library-id` can be removed from
-the allowlist (unused now). The real rule prefix for arise-mcp is
-`mcp__claude_ai_arise-mcp__<tool>` (from Claude Code's own output — don't guess it).
+Pre-approved: all read-only arise-mcp tools (including `get_node_data`),
+`save_workflow`, and Context7's `query-docs` — under **both** connector prefixes,
+`mcp__context7__` (local `.mcp.json`, Claude Code dev) and `mcp__claude_ai_Context7__`
+(claude.ai connector, used in Cowork). Also pre-approved: `Read` on
+`skills/workflow-creator/**` and `.claude/skills/workflow-creator/**`, so reviewing the
+skill's own files doesn't prompt. Deliberately **not** pre-approved: `create_workflow`
+— it uses a workflow from the partner's allocation, so it keeps its own prompt as a
+second safety layer after the skill's Step 9 confirmation. `resolve-library-id` can be
+removed from the allowlist under both prefixes (unused now). The real rule prefix for
+arise-mcp is `mcp__claude_ai_arise-mcp__<tool>` (from Claude Code's own output — don't
+guess it).
 
 ## POC status
 - **Plumbing tests** (`hello-appse-ai`, `list-workflows-test`) — passed.
 - **`workflow-creator`** — simple syncs built cleanly (e.g. SAP B1 item → Shopify
   product, "Workflow 9"); branching builds (Filter / Decision / Splitter) exercised in
   Workflows 11–18 on 2026-09-24, which surfaced the failures today's rules are built
-  on. Full list, and what's still untested, in `references/known-limits.md`.
+  on. Full list, and what's still untested, in
+  `docs/workflow-creator-known-limits.md`.
 - **Recent changes (2026-09-24):** live reference workflow dropped (local
   `references/` cover every shape); Context7 called directly with the library ID and
   node pages in scope; questions sorted into decide yourself / assume and state /
@@ -155,7 +170,8 @@ the allowlist (unused now). The real rule prefix for arise-mcp is
   (`d06d36cf-9579-45f1-bf32-bd24cc0c879b`). Don't expect data from an earlier org —
   check `list_organizations`.
 - **Two different "Workflow 12"s — don't mix them up.** The one in
-  `known-limits.md` (the 53,080-record incident) is in Build Verification Org. A
+  `docs/workflow-creator-known-limits.md` (the 53,080-record incident) is in Build
+  Verification Org. A
   separate empty stub also named "Workflow 12"
   (`f9e89e78-d060-4342-afc2-84b220f11794`) sits in the earlier test org; delete it in
   the UI if testing returns there (no arise-mcp tool can delete a workflow).
@@ -187,8 +203,11 @@ the allowlist (unused now). The real rule prefix for arise-mcp is
   explicitly asked.
 
 ## Next actions
-1. Save all updated `workflow-creator` files, resync `.claude/skills/`, diff, commit.
-2. Run a real Cowork test: upload the zipped skill folder, confirm arise-mcp and
-   Context7 both work there, and run one branching scenario end to end.
-3. Check the `.cursor-plugin` and `marketplace.json` manifests match.
-4. Review the three newer skills before relying on them.
+1. Open Cowork's Customize/Settings menu to confirm which upload surface is real
+   (skill zip vs. plugin package — see Testing in Cowork) before packaging.
+2. Package `skills/workflow-creator` only, upload it, confirm arise-mcp and the
+   Context7 connector both work there, and run one branching scenario end to end.
+3. Open the PR to `main` once the Cowork run is confirmed.
+4. Review the three newer skills before relying on them or adding them to the
+   manifests.
+5. Decide `plugin.json`'s real author/support email before external distribution.

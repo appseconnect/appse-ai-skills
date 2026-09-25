@@ -15,7 +15,7 @@ description: >
   anything. Source app, target app, and entity type are supplied by the user
   each run — none are hardcoded. Works straight from a plain scenario or
   requirements brief (e.g. "When X happens in App A, do Y in App B … Build
-  it in <org>") — no Discovery Summary or SOW is needed first.
+  it in {org}") — no Discovery Summary or SOW is needed first.
 ---
 
 # workflow-creator — Build Two-App Sync Workflow(s)
@@ -60,6 +60,13 @@ needs them, and ask every open question in one round inside Step 9.
   node shape), take it and list it under "Mappings I worked out" or the
   Step 9 assumptions — don't deliberate over it. Spend thinking time on the
   expert review, not on the obvious.
+- **Narrate progress between steps, briefly.** A multi-step build can take a
+  while even with everything parallelized — say one plain-language line
+  before moving on to the next stretch of work (e.g. "Confirmed your org and
+  connections — checking the operations next." / "Operations confirmed —
+  checking field requirements and mappings now.") so it doesn't look stalled.
+  One short line per stretch, never a blow-by-blow of individual calls, and
+  never naming internal tools or steps (see Tone).
 
 ## Where the detail lives (read only when needed)
 | File in `references/` | Read it when |
@@ -490,6 +497,19 @@ those mappings "not cross-checked against documentation".
   are **never** copied from a reference or guessed: source field → a lookup
   action that fetches it at run time (check `list_operations`; add it as a
   node) → a "must ask" question in Step 9 with a short reason.
+- **Chained-action output fields need the same check as input fields.** When a
+  later node in *this* build reads a field from an **earlier node's own
+  output** — not the trigger — that's a different question from what the
+  target action requires as input, and just as easy to get wrong: a
+  create/update action's real result is often wrapped in an object named
+  after the entity (e.g. Shopify's `Create Product` returns `{ userErrors,
+  product: { id, title, variants: {...} } }`, not a flat `id`). Confirm the
+  actual path from `query-docs`'s worked example Result JSON for that
+  specific action, or a real `Run` output if the node has already executed
+  once — never assume it sits at the top level of `payload` just because the
+  input side does. If neither source is available, treat the path as an
+  explicit assumption (Step 9) and name the one test that would confirm or
+  break it — same discipline already required for other proposed mappings.
 - Unresolved inner shape of an object/array, a field the connector requires
   but the partner wants auto-generated, or a required source that won't
   exist (e.g. media) → follow `guide-field-mapping.md`.
