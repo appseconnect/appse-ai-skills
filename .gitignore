@@ -1,0 +1,6 @@
+# Personal Claude Code settings
+.claude/settings.local.json
+
+# Build outputs
+*.zip
+*.plugin
