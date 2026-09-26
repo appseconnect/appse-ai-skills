@@ -9,7 +9,9 @@ description: >
   for a Call Prep Checklist ("what should I ask on my call?", "help me prepare
   for a discovery call"). Always leads with a readiness signal, always tags every
   fact as stated or inferred, and always merges into an existing digest for
-  the same deal rather than duplicating it. Not for writing the SOW,
+  the same deal rather than duplicating it. Always delivers the Discovery
+  Summary as a Word (.docx) file, with the customer follow-up questions on
+  their own page as a ready-to-send email. Not for writing the SOW,
   estimate, or proposal — those are separate downstream skills that consume
   this one's output.
 license: Internal — appse ai Partner Accelerator
@@ -63,7 +65,7 @@ labels shown to the partner change.
 
 ## Tool Reference (arise-mcp, read-only)
 
-This skill's only tool dependency is `list_apps`, used once, in Step 4, to
+This skill's only platform tool is `list_apps`, used once, in Step 4, to
 cross-check each app named in the discovery material against appse ai's
 real catalog. This is a **first-pass credibility check, not a requirement**:
 if `org_id` isn't given, or the lookup isn't available, skip it and mark
@@ -73,6 +75,9 @@ stalling or guessing a `code`.
 No other arise-mcp tool is used. This skill never creates, saves, or
 modifies a workflow — that is a separate skill (`workflow-creator`)
 downstream of this one's output.
+
+The Word file in Step 9A is built with the `docx` skill and saved locally
+only — never uploaded or sent anywhere.
 
 ---
 
@@ -129,7 +134,7 @@ Follow these steps in order. Do not skip or reorder.
 If `mode` is `call-prep` (or the user is asking what to prepare/ask before a
 call rather than pasting material from one that already happened), skip
 directly to **Step 10** (Call Prep Checklist). Otherwise, proceed through
-Steps 1–9 to produce the Discovery Summary. Tell the partner which one
+Steps 1–9A to produce the Discovery Summary and its Word file. Tell the partner which one
 you're doing in plain words (see Partner-Facing Language).
 
 ### Step 1 — Assess Input Sufficiency
@@ -287,6 +292,41 @@ just the final state. Tight, scannable sections — this is read quickly by a
 human and parsed by the next skill in the pipeline, not read as a
 narrative. Length scales with the input, not a fixed template length.
 
+### Step 9A — Deliver the Discovery Summary as a Word File
+
+**The summary path always ends with a Word file.** The chat version (Step
+9) is what the partner reads first; the file is what they keep and share
+with their deal team. Build it straight after presenting — don't ask which
+format. If the partner asks for a PDF instead or as well, build it with
+the `pdf` skill from the same content.
+
+- **Same content as the chat version** — same sections, order, wording,
+  and tags. Don't add, drop, or reword while converting. If the partner
+  asks for changes, update the chat version first, then regenerate the
+  file as a new version.
+- **Layout:** title **Discovery Summary — {account name}**, the date, the
+  tag legend, then each Step 9 section as a heading. Clean, neutral
+  professional layout, no appse ai branding. Wherever the platform is
+  named, write "appse ai" — lowercase, with a space.
+- **Customer follow-up page:** put the Open Questions (Step 7) on their own
+  final page, written as a ready-to-send email — one greeting line
+  addressed to the customer contacts named in the notes (if any), the
+  numbered questions, and a short sign-off with a `[Your name]`
+  placeholder. **No [Stated]/[Inferred]/[Missing] tags, catalog codes, or
+  internal notes on this page** — it's the one part meant to leave the
+  partner's team. If there are no Open Questions, leave the page out.
+- **Carry the readiness flag:** if the signal is **Needs a follow-up
+  call**, say so in one line at the top of the first page.
+- **File name and location:** `Discovery Summary - {Account Name} -
+  {YYYY-MM-DD}.docx`, saved in the current working directory unless the
+  partner names another folder. Never overwrite an existing file — add a
+  version suffix (`v2`, `v3`). A merged summary from a later call (Step 2)
+  is always a new version, never an overwrite.
+- **Report back** with the file path in one line.
+
+The summary path isn't finished until the file exists and its path has
+been reported.
+
 ### Step 10 — Build the Call Prep Checklist (before the call only)
 
 Entry point from Step 0 when no call has happened yet. Title the output
@@ -295,7 +335,8 @@ what to prepare or ask, based on whatever is already known about the deal
 (industry, systems mentioned so far, if any). A structured intake going
 _in_ produces cleaner material coming out in Step 1 next time — this is the
 one place this skill acts before the call rather than cleaning up after it.
-Do not proceed through Steps 1–9 on this path. End with: _"After the call,
+Do not proceed through Steps 1–9A on this path — the Call Prep Checklist
+stays in chat, with no file. End with: _"After the call,
 paste your notes or transcript here and I'll turn them into a Discovery
 Summary."_
 
@@ -311,6 +352,14 @@ No other arise-mcp tool is used by this skill. Never call `create_workflow`,
 `save_workflow`, or anything else that writes — that is entirely out of
 scope here, regardless of what the discovery material describes wanting
 built.
+
+### Local file output — Step 9A only
+
+`docx` skill → the Word version of the Discovery Summary, every summary run
+`pdf` skill → only if the partner asks for a PDF instead or as well
+
+Writes go to the working directory (or a folder the partner names) — never
+overwrite an existing file.
 
 ---
 
@@ -333,6 +382,9 @@ built.
   (added 2026-09-25)** — never exercised live. Watch whether a genuinely
   scope-changing gap ever gets folded into [Missing] just to stay under
   five; that would be the rule working against its own intent
+- **Word file output (Step 9A, added 2026-09-26)** — never exercised live.
+  Watch that the customer follow-up page never picks up tags, catalog
+  codes, or internal notes, and that a merged summary saves as `v2`
 
 ---
 
@@ -372,6 +424,10 @@ built.
   mark **not cross-checked** rather than guessing when it isn't
 - Never write the SOW, effort estimate, or proposal — output stops at the
   digest
+- The summary path always ends with a Word file (Step 9A), built from the
+  chat version without asking which format; the customer follow-up page
+  carries no tags, codes, or internal notes. Never overwrite a file — new
+  versions get `v2`, `v3`. The Call Prep Checklist stays in chat
 - Never editorialize on deal quality, customer readiness, or likelihood to
   close
 - On being asked to stop, stop immediately and report exactly what has and

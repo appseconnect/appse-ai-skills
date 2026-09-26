@@ -9,7 +9,8 @@ description: >
   understand a system outside their core expertise (e.g. a SAP partner
   scoping a deal that also touches Shopify or HubSpot) before or during
   scoping. Never tied to a specific deal — works from app names alone, no
-  Discovery Summary, SOW, or call notes needed first. Not for extracting a
+  Discovery Summary, SOW, or call notes needed first. Always delivers the
+  brief as a customer-shareable PDF one-pager. Not for extracting a
   specific customer's requirements (that's `requirement-digest`), not for
   drafting a SOW, and not for building a workflow — those are separate
   skills this one can hand off to.
@@ -55,7 +56,9 @@ differences) — skip if it doesn't resolve; never fabricate a quirk to sound
 more specific.
 
 No write tool is used. This skill never creates, saves, or modifies
-anything, and never commits to a scope, timeline, or price for any deal.
+anything on the platform, and never commits to a scope, timeline, or price
+for any deal. The only thing it writes is the local PDF in Step 6, built
+with the `pdf` skill — never uploaded or sent anywhere.
 
 ---
 
@@ -170,6 +173,43 @@ naming them internally): "Ready to scope a specific deal using these?" →
 `requirement-digest` if there's a call to digest, `workflow-creator` if the
 partner wants to build straight from a plain scenario.
 
+### Step 6 — Deliver the Brief as a PDF One-Pager
+
+**The brief always ends with a PDF the partner can share with a
+customer.** Build it straight after presenting — don't ask which format.
+If the partner asks for Word instead or as well, build it with the `docx`
+skill from the same content.
+
+- **Same substance as the chat brief, written for a customer reader:**
+  - **Keep:** the "supported as of {date}" line (prominent, directly under
+    the title), the confirmed apps by product name, the common scenarios,
+    what each app supports (in business terms), and considerations worth
+    planning for.
+  - **Drop:** internal catalog codes (e.g. `shopify`,
+    `dynamics365businesscentral`), internal tool names, the partner
+    next-step line, and anything the chat brief marked unconfirmed — the
+    PDF states only what's confirmed.
+  - **Not currently available:** keep it, worded neutrally ("Not currently
+    available as a built-in connection: {app}"). Never imply it's coming —
+    no roadmap promises.
+- **Length:** one page where possible; two at most for three or more apps.
+- **Layout:** title **Capability Brief — {App A} + {App B}**, the date
+  line, then short sections with headings. Clean, neutral layout, no appse
+  ai logo or branding assets. Wherever the platform is named, write "appse
+  ai" — lowercase, with a space. Never alter product names or partner
+  marks (SAP, Microsoft, Shopify, HubSpot…).
+- **Skip the file** if no named app was confirmed in the catalog, or if
+  this was the uncatalogued orientation from Step 0 — there's nothing
+  confirmed to share. Say so in one line instead.
+- **File name and location:** `Capability Brief - {App A} + {App B} -
+  {YYYY-MM-DD}.pdf`, saved in the current working directory unless the
+  partner names another folder. Never overwrite an existing file — add a
+  version suffix (`v2`, `v3`).
+- **Report back** with the file path in one line.
+
+The run isn't finished until the file exists and its path has been
+reported (or the one-line reason it was skipped).
+
 ---
 
 ## Allowed Tools
@@ -183,7 +223,15 @@ list_operations → Step 2, to enumerate real triggers/actions per app
 
 query-docs (`/appseconnect/appse-ai-docs`) → Step 4 only, for quirks/limits; skip if it doesn't resolve
 
-No write tool is used by this skill. Never call `create_workflow`,
+### Local file output — Step 6 only
+
+`pdf` skill → the PDF one-pager, every run with at least one confirmed app
+`docx` skill → only if the partner asks for Word instead or as well
+
+Writes go to the working directory (or a folder the partner names) — never
+overwrite an existing file.
+
+No platform write tool is used by this skill. Never call `create_workflow`,
 `save_workflow`, or anything that modifies pricing, contracts, or the
 partner's org.
 
@@ -202,6 +250,9 @@ partner's org.
   `workflow-creator` once a specific workflow is being built
 - Not yet tested: three or more apps in one brief, an app with several
   catalog variants where the choice actually changes available operations
+- PDF output (Step 6) not yet exercised — watch that catalog codes and
+  unconfirmed items never reach the file, and that it stays to one page
+  for two apps
 
 ---
 
@@ -220,7 +271,12 @@ partner's org.
   or conversation
 - **Cold-start always works** — never require a Discovery Summary, SOW, or
   prior digest before producing a brief
-- **Never write, save, or modify anything** — read-only, every run
+- **Never write, save, or modify anything on the platform** — read-only,
+  every run; the only thing written is the local PDF (Step 6)
+- **Always end with a customer-shareable PDF one-pager** (Step 6), without
+  asking which format — dated, no catalog codes, only confirmed content,
+  never overwriting an existing file. Skip it only when nothing was
+  confirmed
 - End with a plain next-step pointer to `requirement-digest` or
   `workflow-creator`, without naming internal tools
 - On being asked to stop, stop immediately and report exactly what has and
