@@ -9,8 +9,8 @@ description: >
   handover document", "explain what this workflow does", or right after
   workflow-creator has built a workflow. Takes the workflow from the
   conversation (workflow-creator's report) or asks for its ID or name.
-  Read-only: never changes the workflow. Delivers the documentation as a
-  Word (.docx) or PDF file.
+  Read-only: never changes the workflow. Asks as little as possible and
+  generates the documentation straight away as a Word (.docx) file.
 license: Internal — appse ai Partner Accelerator
 ---
 
@@ -48,8 +48,8 @@ saved workflow or the app's real operation details; nothing is invented.
   exists in business terms ("so an order is never created twice"), not
   just *what* it does.
 - **Don't invent.** If something can't be determined from the workflow or
-  the app's operation details (e.g. who the support contact is), ask the
-  partner (Step 5) or leave a clearly marked placeholder — never guess.
+  the app's operation details (e.g. who the support contact is), leave a
+  clearly marked placeholder — never guess, and don't stop to ask.
 - **Neutral branding.** This is the partner's document; use their branding
   only if they provide it. Don't add appse ai branding.
 
@@ -63,7 +63,7 @@ saved workflow or the app's real operation details; nothing is invented.
 | `creator_report` | ⬜ | workflow-creator's output, if present in the conversation | Used as extra context for purpose, mapping reasons, safeguards, and assumptions — the saved workflow governs |
 | `customer_name` | ⬜ | From the conversation or the partner | Placeholder `[Customer name]` |
 | `support_contact` | ⬜ | Partner | Placeholder `[Support contact]` |
-| `format` | ⬜ | Partner — Word, PDF, or both | Asked in Step 6 |
+| `format` | ⬜ | Only if the partner asks for something else | Word (.docx) — never asked |
 
 ---
 
@@ -78,9 +78,9 @@ Follow these steps in order.
   its report: an **"Open it here:"** link (`…/workflows/{id}/editor`), a
   **"Workflow ID:"** line, and sections like "Mappings I worked out",
   "Safety checks I added", and "Assumptions I'm making". Take the workflow
-  ID from the link or ID line. If several workflows appear, offer each as
-  an option (below). Confirm in one line: *"I'll document 'Workflow 24'
-  (Shopify order → SAP sales order) — is that the one?"*
+  ID from the link or ID line and **go straight ahead — don't ask for
+  confirmation.** Only if several workflows appear, offer them as options
+  (below).
 - **Use that report as extra context, not as the source of truth.** Its
   business purpose, proposed mappings (with reasons), safety checks, and
   assumptions help explain *why* the workflow is built the way it is — use
@@ -237,34 +237,28 @@ what and suggest updating the workflow (e.g. with workflow-creator).
 
 Include only what applies to this workflow — no generic filler sections.
 
-### Step 5 — Present for Review (and ask only what's needed)
+### Step 5 — Generate the Word Document Straight Away
 
-Present the documentation in chat. If anything needed for the document
-can't be determined, ask in **one numbered round**, each with a
-recommendation — typically only: customer name (if not known), support
-contact, and anything in Step 3 the partner may want fixed before sharing.
-Keep it to a few questions; header details can stay as placeholders.
+**Don't ask questions and don't wait for a review in chat** — generate the
+Word file as soon as the workflow is identified and read. The only question
+this skill ever asks is *which workflow* (Step 0), and only when it can't
+tell from the conversation.
 
-### Step 6 — Deliver as a Word or PDF File
-
-The final output is always a file:
-
-> "I'll put this into a file you can share. Which format?
-> 1. **Word (.docx)** — editable
-> 2. **PDF** — ready to send
-> 3. **Both**"
-
-- Build the file from the documentation **as approved in chat** — same
-  sections and wording. Use the `docx` skill for Word and the `pdf` skill
-  for PDF (for both, build Word first and produce the PDF from the same
-  content).
-- Clean, professional layout: title, header block, Part A, then Part B.
-  Tables for mappings and steps. Part A should read well on its own — a
-  partner may share only Part A with the customer; offer that as an option.
-- **File name:** `Workflow Documentation - {Workflow purpose} - {YYYY-MM-DD}.docx`
-  / `.pdf`, saved in the working directory unless the partner names another
-  folder. Never overwrite an existing file — add `v2`, `v3`.
-- Report back with the file path(s) and remind the partner to fill any
+- **Anything unknown becomes a placeholder,** never a question: customer
+  name → `[Customer name]`, support contact → `[Support contact]`. Step 3
+  observations go in "Notes for the implementation team" — don't stop to
+  ask about them.
+- Use the `docx` skill. Clean, professional layout: title, header block,
+  Part A, then Part B, with tables for steps and field mappings. Part A must
+  read well on its own, so a partner can share just that part with the
+  customer.
+- **File name:** `Workflow Documentation - {Workflow purpose} - {YYYY-MM-DD}.docx`,
+  saved in the working directory unless the partner names another folder.
+  Never overwrite an existing file — add `v2`, `v3`.
+- Produce a PDF only if the partner explicitly asks for one (use the `pdf`
+  skill, from the same content).
+- Report back briefly: the file path, a two- or three-line summary of what
+  the workflow does, any Step 3 notes worth a look, and a reminder to fill any
   placeholders before sharing.
 
 ---
@@ -289,7 +283,7 @@ contains record data.
 an operation, field, or expression function that isn't clear from the
 operation detail.
 
-### Local file output — Step 6
+### Local file output — Step 5
 `docx` skill → Word version · `pdf` skill → PDF version. Writes go to the
 working directory (or a folder the partner names); never overwrite.
 
@@ -323,7 +317,10 @@ working directory (or a folder the partner names); never overwrite.
   or the docs; anything else is asked or left as a marked placeholder.
 - Never call a workflow "tested" unless its run history shows successful
   runs.
-- The final output is always a Word or PDF file; the run isn't complete
-  until the file path is reported.
+- Ask as little as possible: the only question is which workflow, and only
+  when the conversation doesn't show it. No confirmation, review, or format
+  questions — unknown details become placeholders.
+- The final output is always a Word (.docx) file (PDF only on request); the
+  run isn't complete until the file path is reported.
 - On being asked to stop, stop immediately and report what has and hasn't
   been produced.
