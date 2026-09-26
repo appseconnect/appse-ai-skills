@@ -59,7 +59,8 @@ saved workflow or the app's real operation details; nothing is invented.
 
 | Field | Required | Source | Default |
 |---|---|---|---|
-| `workflow_id` | ✅ | From the conversation (e.g. workflow-creator's report or link), or asked from the partner; a workflow **name** is resolved via `list_workflows` | — |
+| `workflow_id` | ✅ | From workflow-creator's output in the conversation (its "Open it here" link or "Workflow ID" line, earlier in the chat or pasted in); otherwise the partner picks from the latest workflows offered as options, or enters a link, ID, or name (resolved via `list_workflows`) | — |
+| `creator_report` | ⬜ | workflow-creator's output, if present in the conversation | Used as extra context for purpose, mapping reasons, safeguards, and assumptions — the saved workflow governs |
 | `customer_name` | ⬜ | From the conversation or the partner | Placeholder `[Customer name]` |
 | `support_contact` | ⬜ | Partner | Placeholder `[Support contact]` |
 | `format` | ⬜ | Partner — Word, PDF, or both | Asked in Step 6 |
@@ -72,12 +73,37 @@ Follow these steps in order.
 
 ### Step 0 — Identify the Workflow
 
-- **If a workflow was built or discussed earlier in this conversation**
-  (e.g. workflow-creator's report with a link like
-  `…/workflows/{id}/editor`), take the ID from there and confirm in one
-  line: *"I'll document 'Workflow 24' (Shopify order → SAP sales order) —
-  is that the one?"*
-- **Otherwise ask** for the workflow ID, its link, or its name.
+- **First, look in the conversation for workflow-creator's output** —
+  either earlier in this chat or pasted in by the partner. Recognise it by
+  its report: an **"Open it here:"** link (`…/workflows/{id}/editor`), a
+  **"Workflow ID:"** line, and sections like "Mappings I worked out",
+  "Safety checks I added", and "Assumptions I'm making". Take the workflow
+  ID from the link or ID line. If several workflows appear, offer each as
+  an option (below). Confirm in one line: *"I'll document 'Workflow 24'
+  (Shopify order → SAP sales order) — is that the one?"*
+- **Use that report as extra context, not as the source of truth.** Its
+  business purpose, proposed mappings (with reasons), safety checks, and
+  assumptions help explain *why* the workflow is built the way it is — use
+  them in Part A (purpose, safeguards, prerequisites) and in Part B's
+  mapping reasons and notes. **The saved workflow always governs:** if the
+  report and the saved workflow differ (e.g. a different start date or
+  field mapping), document what's saved and flag the difference in "Notes
+  for the implementation team".
+- **If there's no workflow in the conversation, offer options — don't ask
+  an open question.** Call `list_workflows` (most recently changed first)
+  and present the latest five as numbered choices, plus a last option to
+  enter one directly — using the question tool with selectable options if
+  it's available, otherwise a numbered list:
+  > "Which workflow should I document?
+  > 1. Workflow 24 — updated today
+  > 2. Workflow 22 — updated yesterday
+  > 3. Workflow 18 — updated 2 days ago
+  > 4. Workflow 17 — updated 2 days ago
+  > 5. Workflow 16 — updated 3 days ago
+  > 6. Another one — paste its link, ID, or name"
+
+  Show workflow **names and when they were last updated**, not IDs. Never
+  use a real workflow ID as an example in the question.
 - **Given a name:** call `list_workflows` with that name as the search
   term. One match → use it. Several → list them (name, last updated) and
   ask which. None → say so and ask for the ID.
@@ -285,6 +311,10 @@ working directory (or a folder the partner names); never overwrite.
 
 - Document what's **saved**, not what was intended; flag differences in
   "Notes for the implementation team" — never fix the workflow.
+- Read workflow-creator's output from the conversation first (link, ID,
+  and its mapping reasons, safeguards, and assumptions as context). If
+  there's none, offer the latest workflows as numbered options by name —
+  never an open "which workflow?" question.
 - Part A is plain business language for the customer — no expressions,
   IDs, or JSON. Part B holds the technical detail.
 - Never include credential IDs, org IDs, secrets, internal tool names, or
