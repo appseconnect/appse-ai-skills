@@ -24,7 +24,9 @@
       "Read(./skills/requirement-digest/**)",
       "Read(./.claude/skills/requirement-digest/**)",
       "Read(./skills/cross-app-scenario-advisor/**)",
-      "Read(./.claude/skills/cross-app-scenario-advisor/**)"
+      "Read(./.claude/skills/cross-app-scenario-advisor/**)",
+      "Read(./skills/workflow-documenter/**)",
+      "Read(./.claude/skills/workflow-documenter/**)"
     ]
   }
 }

@@ -16,6 +16,7 @@
     "./skills/workflow-creator",
     "./skills/sow-generator",
     "./skills/requirement-digest",
-    "./skills/cross-app-scenario-advisor"
+    "./skills/cross-app-scenario-advisor",
+    "./skills/workflow-documenter"
   ]
 }
