@@ -272,23 +272,32 @@ the internal test org, 2026-09-24.
   `id` rule from "e.g. a UUID" to a hard requirement.
 - **(2026-09-26) — two field-mapping bugs, confirmed reproducible across
   two independent builds of the same customer create-or-update scenario.**
-  `{{$payload.addresses[].city}}` (and state/street/country/zip/name) sent
-  an array where SAP B1's `BPAddresses[].City` expects one string —
+  `{{$payload.addresses[].city}}` (and state/street/country/zip/name) —
   confirmed by every `Create BusinessPartner` failing and most
   `Update BusinessPartner` calls failing, in both builds
   (`totalRecords`/`failedRecords` from `get_execution_summary`: Create 1/1
-  failed both times; Update 10/14 and 3/3 failed). The correct field is
-  Shopify's own singular `defaultAddress.*`, already used correctly in the
-  earlier Workflow 30 build. Separately, `{{$payload.BPAddresses[idx].RowNum}}`
-  appeared on the Update node in both builds with **no `SplitterNode`
-  anywhere in the flow** — `idx` only has meaning inside a Splitter's
-  iteration, so this was copied from the RowNum-preservation reference
-  pattern without checking this workflow actually had the context that
-  token depends on. Payload access was off for the org in both builds, so
-  the literal SAP error text was never seen — the fix is grounded in the
-  operation's field types and the reproducible failure counts, not a
-  confirmed error message. Both led to new confirmed-quirks entries in
-  `guide-field-mapping.md`.
+  failed both times; Update 10/14 and 3/3 failed). Separately,
+  `{{$payload.BPAddresses[idx].RowNum}}` appeared on the Update node in
+  both builds with **no `SplitterNode`** anywhere in the flow — `idx` only
+  has meaning inside a Splitter's iteration. Payload access was off for
+  the org, so this first write-up guessed at the mechanism from field
+  types and failure counts alone.
+  **Correction, same day, after payload access was turned on and the
+  literal SAP error was read on a third build:** the `addresses[]` guess
+  was directionally right but imprecise. The real error
+  (`BadRequest request body data is invalid`) showed the `Update` call's
+  actual request body with **7+ duplicated `BPAddresses` entries** — one
+  per address the Shopify customer has on file — all from a single
+  written template. A bare `addresses[]` (no index) inside a nested object
+  **duplicates the whole containing object per array element**, not just
+  "returns an array instead of a string" as first assumed. The same real
+  error also showed `RowNum: ""` and `Phone1: ""` being sent — the
+  existing "never send a blank, leave it out" rule wasn't applied inside a
+  nested object. The `idx`→`[0]` fix held correctly on this third build;
+  the `addresses[]` duplication and blank-nested-field issues persisted
+  across all three builds until this correction. Rewrote both
+  `guide-field-mapping.md` entries with the confirmed mechanism instead of
+  the original guess.
 - **(2026-09-26) — SAP B1 `Get Item(s)` output wrapper, same class of bug
   as the Shopify one below, different shape.** A "Get SAP Item" node feeds
   an "Is Sales Item" Filter; the Filter mapped `{{$payload.ItemCode}}`,

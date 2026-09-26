@@ -207,14 +207,31 @@ only when a build actually confirms one; never add a guess here.
   depended on. If there's no Splitter, reference a specific element
   (`[0]`) or a real filter expression instead — never carry `[idx]` over
   from a reference file on faith.
-- **Shopify's `addresses` is a list — a bare `addresses[]` reference
-  returns an array, not one address.** Confirmed failure: a build mapped
-  `{{$payload.addresses[].city}}` (and the same pattern for state, street,
-  country, zip, name) onto SAP B1 `BPAddresses[].City` — a single string
-  field — across two separate builds. Every `Create BusinessPartner` call
-  failed, and most `Update BusinessPartner` calls failed too. Shopify
-  already exposes the customer's primary address as a **singular** field —
-  `defaultAddress.city`, `defaultAddress.address1`, etc. — use that instead
-  of indexing into `addresses[]` yourself. This is the same shape the
-  earlier, working build (Workflow 30) used correctly — don't regress to
-  the bare-array form even though both read as plausible expressions.
+- **A bare `addresses[]` reference (no index) inside a nested object
+  duplicates the whole object once per array element — it does not just
+  return the wrong type.** Confirmed by the real platform error, three
+  builds in a row: `{{$payload.addresses[].city}}` (and the same pattern
+  for state, street, country, zip, name) inside a single `BPAddresses`
+  entry produced **one full `BPAddresses` object per address the Shopify
+  customer has on file** — 7+ duplicated entries from one written
+  template, all sharing the same `AddressType`, sent to SAP B1's
+  `create_businesspartner` / `update_businesspartner`. Both failed with
+  `BadRequest request body data is invalid`. Shopify already exposes the
+  customer's primary address as a **singular** field —
+  `defaultAddress.city`, `defaultAddress.address1`, etc. — use that
+  instead of indexing into `addresses[]` yourself. This is the same shape
+  the earlier, working build (Workflow 30) used correctly — don't regress
+  to the bare-array form even though both read as plausible expressions.
+  **General rule, not just this field:** never write a bare `[]` (no
+  index, no filter) inside a nested object you're building — check what it
+  actually does to the surrounding object, not just the one field, before
+  trusting it.
+- **Never send `""` for a field with no resolvable value — inside a
+  nested array object, exactly like at the top level.** Confirmed in the
+  same error: `RowNum: ""` and `Phone1: ""` were sent when neither had a
+  real value (no existing SAP address row to preserve a `RowNum` from; no
+  phone on the source record). The existing "leave it out rather than
+  sending a blank" rule already covers this — it just wasn't applied
+  inside a nested `BPAddresses` entry. If a nested optional field has no
+  value, drop that key from the object entirely; don't assume the
+  top-level rule doesn't reach inside arrays.
