@@ -195,3 +195,26 @@ only when a build actually confirms one; never add a guess here.
   different wrapper shape (`value[]` array, not a named object) — check
   every SAP B1 get/list action's real output the same way; don't assume
   either example covers the other.
+- **`[idx]` in an expression only means something inside an actual
+  `SplitterNode`'s own iteration.** It is not a general-purpose "give me an
+  array element" token. Confirmed failure: a build with **no Splitter
+  anywhere in the flow** wrote
+  `{{$payload.BPAddresses[idx].RowNum}}` on an Update node — real records
+  went through, `idx` resolved to nothing usable, and the update failed on
+  every record across two separate builds of the same shape. This was
+  copied from a reference pattern's RowNum-preservation example without
+  checking whether *this* workflow actually has the Splitter that example
+  depended on. If there's no Splitter, reference a specific element
+  (`[0]`) or a real filter expression instead — never carry `[idx]` over
+  from a reference file on faith.
+- **Shopify's `addresses` is a list — a bare `addresses[]` reference
+  returns an array, not one address.** Confirmed failure: a build mapped
+  `{{$payload.addresses[].city}}` (and the same pattern for state, street,
+  country, zip, name) onto SAP B1 `BPAddresses[].City` — a single string
+  field — across two separate builds. Every `Create BusinessPartner` call
+  failed, and most `Update BusinessPartner` calls failed too. Shopify
+  already exposes the customer's primary address as a **singular** field —
+  `defaultAddress.city`, `defaultAddress.address1`, etc. — use that instead
+  of indexing into `addresses[]` yourself. This is the same shape the
+  earlier, working build (Workflow 30) used correctly — don't regress to
+  the bare-array form even though both read as plausible expressions.

@@ -175,10 +175,17 @@ reference file follows it.
 
 **Flow:** `{ "nodes": [...], "edges": [...], "viewport": {x, y, zoom} }`
 
-**Every node:** `id` (unique string, e.g. a UUID), `type`, `data`,
+**Every node:** `id` (a real UUID — e.g. `9dd780ab-674b-42ca-8b9b-b37db2d1c27c`,
+**not** a readable slug like `trigger_1` or `sap_lookup`), `type`, `data`,
 `position: {x, y}`, `measured: {width, height}` — app nodes 240×120,
 Decision/Filter nodes 136×120. Lay nodes out left→right (x += ~370 per
 step; parallel/branch nodes offset on y, e.g. ±65) so the canvas is readable.
+**Confirmed failure:** a build used slug-style node IDs — every node still
+executed individually and the flow still produced output, but the platform
+never wrote an execution-history record for the run at all (confirmed by
+comparing against builds with real UUIDs, which did). A slug is a "unique
+string" in the loosest sense, but it isn't what the platform's execution
+tracking expects — generate a real UUID for every node, always.
 
 **`data` on `AppTriggerNode`:** `app` (the app's catalog details: `code`,
 `display_name`, `icon`, `doc_url`, `category`, `has_actions`,

@@ -261,6 +261,34 @@ the internal test org, 2026-09-24.
   was correctly identified as required. Led to the required-field gate
   (SKILL.md, end of Step 8) and the confirmed-quirks list in
   `guide-field-mapping.md`.
+- **(2026-09-26) — slug-style node IDs silently broke execution-history.**
+  A build (customer create-or-update, Shopify↔SAP B1) used readable node
+  IDs (`trigger_1`, `sap_lookup`, ...) instead of UUIDs. `Run once` still
+  executed every node and showed green success in the canvas, but
+  `execution-history` stayed permanently empty — confirmed by rebuilding
+  the identical scenario with real UUID node IDs, which produced a real
+  execution-history entry immediately. Nodes executing does not mean the
+  platform is tracking the run. Led to tightening `conventions.md`'s node
+  `id` rule from "e.g. a UUID" to a hard requirement.
+- **(2026-09-26) — two field-mapping bugs, confirmed reproducible across
+  two independent builds of the same customer create-or-update scenario.**
+  `{{$payload.addresses[].city}}` (and state/street/country/zip/name) sent
+  an array where SAP B1's `BPAddresses[].City` expects one string —
+  confirmed by every `Create BusinessPartner` failing and most
+  `Update BusinessPartner` calls failing, in both builds
+  (`totalRecords`/`failedRecords` from `get_execution_summary`: Create 1/1
+  failed both times; Update 10/14 and 3/3 failed). The correct field is
+  Shopify's own singular `defaultAddress.*`, already used correctly in the
+  earlier Workflow 30 build. Separately, `{{$payload.BPAddresses[idx].RowNum}}`
+  appeared on the Update node in both builds with **no `SplitterNode`
+  anywhere in the flow** — `idx` only has meaning inside a Splitter's
+  iteration, so this was copied from the RowNum-preservation reference
+  pattern without checking this workflow actually had the context that
+  token depends on. Payload access was off for the org in both builds, so
+  the literal SAP error text was never seen — the fix is grounded in the
+  operation's field types and the reproducible failure counts, not a
+  confirmed error message. Both led to new confirmed-quirks entries in
+  `guide-field-mapping.md`.
 - **(2026-09-26) — SAP B1 `Get Item(s)` output wrapper, same class of bug
   as the Shopify one below, different shape.** A "Get SAP Item" node feeds
   an "Is Sales Item" Filter; the Filter mapped `{{$payload.ItemCode}}`,
