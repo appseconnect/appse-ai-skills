@@ -174,6 +174,15 @@ only when a build actually confirms one; never add a guess here.
 - **SAP Business One — `Currency`:** the code is whatever that company
   defined in their own system (e.g. `"$"`), never assume the ISO code
   (`"USD"`). See Company-specific settings above.
+- **SAP Business One — `State`/province code on an address:** must be a
+  code SAP itself has configured for that country, not whatever the source
+  app sends. Confirmed failure: a build passed Shopify's `provinceCode`
+  (e.g. `"TS"`, `"WB"`) straight through to `BPAddresses[].State`, and SAP
+  rejected it as not a valid state code for that company's setup. Same
+  category as `Currency` — check whether the target app has a lookup
+  operation for valid state/province codes before assuming the source
+  app's code carries over; if none exists, this is a "must ask" per
+  Company-specific settings, not a direct copy.
 - **Shopify — GraphQL create/update actions wrap the result under the
   entity's own name.** `Create Product` returns
   `{ userErrors, product: { id, title, variants: {...}, ... } }` — not a

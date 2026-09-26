@@ -273,6 +273,15 @@ node and ask what a real integration expert would ask:
 - **Does everything this record points to exist in the target?** E.g. an
   order's customer *and* each line's product. A parent check doesn't prove
   the children exist — check both, or state it as an assumption.
+- **When preserving an existing sub-record's row identifier on an update
+  (`RowNum`, a line number, an address/contact ID) — check that sub-record
+  actually exists on the found parent first.** Confirmed failure: an
+  Update read `RowNum` from the found record's `BPAddresses[0]`, but that
+  record had no addresses yet — a required field resolved to `""` and the
+  update failed. A parent record existing doesn't mean its sub-array does.
+  If the sub-array is empty or missing, this is that record's *first*
+  entry — use the sub-array's own starting index (commonly `0`), never a
+  reference into an array that isn't there.
 - **What does this app's API actually do?** Check the operation details and
   docs rather than assuming another app's behaviour carries over (e.g.
   whether an update replaces a whole array or targets rows by ID).

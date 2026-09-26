@@ -298,6 +298,30 @@ the internal test org, 2026-09-24.
   across all three builds until this correction. Rewrote both
   `guide-field-mapping.md` entries with the confirmed mechanism instead of
   the original guess.
+- **(2026-09-26) — four more observations from the same customer
+  create-or-update scenario, found by direct inspection of the node
+  Configure panel rather than a run:**
+  1. **`State` sent as Shopify's raw `provinceCode`** (e.g. `"TS"`, `"WB"`)
+     — SAP rejected it as not a valid state code for that company's setup.
+     Same category as `CardType`/`Currency` — a code the target defines,
+     not one to copy from the source. New confirmed-quirk added.
+  2. **`Phone1` sent blank** — the existing "never leave blank" rule
+     (Step 6) wasn't applied to it in this build.
+  3. **`RowNum` (required) resolved to `""`** on the same Update, because
+     the found business partner had no existing `BPAddresses` at all —
+     `BPAddresses[0].RowNum` referenced a row that didn't exist. Not the
+     same bug as the earlier `idx`-with-no-Splitter incident (that fix
+     held correctly here) — this is a fresh case: the fixed index `[0]`
+     itself was wrong, because the array it indexes into was empty.
+  4. **No check for whether the customer already has an address in SAP at
+     all** before assuming one to preserve. This and #3 are the same root
+     gap — added a new expert-review bullet (SKILL.md, "Design, then
+     attack your own design" — always read, not a conditional guide) since
+     the guide-file-only versions of two earlier fixes (`addresses[]`,
+     blank-nested-fields) did **not** hold across four consecutive
+     rebuilds despite being clearly stated — this is now a second,
+     separate finding that guide-file rules are not reliably applied, real
+     enough to treat as a pattern, not a one-off.
 - **(2026-09-26) — SAP B1 `Get Item(s)` output wrapper, same class of bug
   as the Shopify one below, different shape.** A "Get SAP Item" node feeds
   an "Is Sales Item" Filter; the Filter mapped `{{$payload.ItemCode}}`,
