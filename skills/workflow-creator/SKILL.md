@@ -566,18 +566,32 @@ those mappings "not cross-checked against documentation".
   exist (e.g. media) → follow `guide-field-mapping.md`.
 
 ### Step 7 — Write Field Mappings Using the Correct Expression Syntax
-Use appse ai's documented expression syntax — **not** `{{trigger.field}}`.
-If you need a function or form not listed in `conventions.md`, run one
-targeted `query-docs` on `/appseconnect/appse-ai-docs` for it (e.g.
-"expression date formatting", "expression default value when field is
-missing") rather than guessing a function name.
-- `{{ $payload.fieldName }}` — reference a field from the immediately
+**Every expression value in the saved JSON must start with a literal `=`
+before the `{{`** — e.g. `"EmailAddress": "={{ $payload.defaultEmailAddress.emailAddress }}"`,
+not `"EmailAddress": "{{ $payload.defaultEmailAddress.emailAddress }}"`. This
+is the actual signal the platform uses to store a field as a live
+expression instead of literal text — it's what the node editor's own
+Parameters panel shows as the `f` (expression) vs. `T` (text) toggle.
+**Confirmed failure:** a build wrote every field's value without the
+leading `=` — every Filter, Decision, and mapped field in the whole
+workflow. The workflow still saved without error, but every field was
+stored as literal text, not evaluated — the build failed completely, not
+on one field. Check this on **every** field before Step 10, not just the
+ones that look unusual.
+
+Use appse ai's documented expression syntax otherwise — **not**
+`{{trigger.field}}`. If you need a function or form not listed in
+`conventions.md`, run one targeted `query-docs` on
+`/appseconnect/appse-ai-docs` for it (e.g. "expression date formatting",
+"expression default value when field is missing") rather than guessing a
+function name.
+- `={{ $payload.fieldName }}` — reference a field from the immediately
   preceding node
-- `{{ $('nodeName').payload.fieldName }}` — reference a field from a named
+- `={{ $('nodeName').payload.fieldName }}` — reference a field from a named
   earlier node **on the same path** — never reach back past a Filter or
   Decision to the trigger (see "Follow the data flow" in Think Like an
   Integration Expert)
-- Nested fields use dot notation (`{{ $payload.shipping.city }}`); arrays
+- Nested fields use dot notation (`={{ $payload.shipping.city }}`); arrays
   support `[*]`, indexing, and filter expressions — only use these if the
   mapping genuinely needs them.
 

@@ -187,6 +187,17 @@ comparing against builds with real UUIDs, which did). A slug is a "unique
 string" in the loosest sense, but it isn't what the platform's execution
 tracking expects — generate a real UUID for every node, always.
 
+**Every expression value needs a leading `=` before the `{{`** —
+`"EmailAddress": "={{ $payload.defaultEmailAddress.emailAddress }}"`, never
+`"EmailAddress": "{{ $payload.defaultEmailAddress.emailAddress }}"`. This is
+the platform's actual signal for "evaluate this as an expression" — it's
+what the node editor's Parameters panel shows as the `f` (expression) vs.
+`T` (text) toggle. **Confirmed failure:** an entire build — every Filter,
+Decision, and mapped field — was written without the leading `=`. It saved
+without any error, but every field was stored as literal text and the
+workflow failed completely. Check every field has it, not just the ones
+that look unusual — this breaks the whole workflow at once, not one field.
+
 **`data` on `AppTriggerNode`:** `app` (the app's catalog details: `code`,
 `display_name`, `icon`, `doc_url`, `category`, `has_actions`,
 `has_triggers`, `has_tools`, `description`), `idx` (1), `cron`

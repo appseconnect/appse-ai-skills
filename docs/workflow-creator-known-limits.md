@@ -322,6 +322,35 @@ the internal test org, 2026-09-24.
      rebuilds despite being clearly stated — this is now a second,
      separate finding that guide-file rules are not reliably applied, real
      enough to treat as a pattern, not a one-off.
+- **(2026-09-26) — a whole build silently saved with every field as literal
+  text, not an expression.** Every expression value in every earlier build
+  today happened to carry a leading `=` before the `{{` (e.g.
+  `"={{$payload.CardCode}}"`) — but nothing in `SKILL.md` or
+  `conventions.md` ever actually said to do this; it was the model's own
+  habit, not a documented rule. One build dropped it — every Filter,
+  Decision, and mapped field across two workflows saved as
+  `"{{$payload...}}"` with no `=`. `save_workflow` accepted it without
+  error; the field just resolved as literal text, not a value. Confirmed
+  live in the node editor: the field's mode toggle showed `T` (text), not
+  `f` (expression) — switching it to `f` immediately made it resolve
+  correctly. This is a whole-workflow failure, not a single-field one — the
+  most severe mapping bug found today, since it isn't scoped to one field
+  or one app. Fixed by documenting the `=` requirement explicitly in both
+  `SKILL.md` Step 7 and `conventions.md`'s envelope section, instead of
+  relying on it happening by chance.
+- **(2026-09-26) — a build guessed a generic, flat Shopify customer shape
+  instead of checking the real one.** Every field across an entire
+  workflow used `email`, `phone`, `first_name`, `last_name` — plausible for
+  a "typical" API, but not Shopify's real shape, which is nested and
+  camelCase (`defaultEmailAddress.emailAddress`,
+  `defaultPhoneNumber.phoneNumber`, `firstName`, `lastName`). Every field
+  resolved to `null`. This came right after confirming the `=`-prefix fix
+  held on the same build — so the expression syntax was correct, the field
+  path underneath it was just wrong. Every earlier build today got this
+  exact shape right by actually checking the trigger's real output; this
+  one substituted assumed knowledge instead. Added as a new confirmed
+  quirk in `guide-field-mapping.md`, same file, right next to the existing
+  Shopify entry.
 - **(2026-09-26) — SAP B1 `Get Item(s)` output wrapper, same class of bug
   as the Shopify one below, different shape.** A "Get SAP Item" node feeds
   an "Is Sales Item" Filter; the Filter mapped `{{$payload.ItemCode}}`,

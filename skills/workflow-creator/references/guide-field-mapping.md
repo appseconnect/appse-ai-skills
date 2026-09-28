@@ -183,6 +183,16 @@ only when a build actually confirms one; never add a guess here.
   operation for valid state/province codes before assuming the source
   app's code carries over; if none exists, this is a "must ask" per
   Company-specific settings, not a direct copy.
+- **Shopify — a customer's email, phone, and name are nested and
+  camelCase, not flat or snake_case.** The real fields are
+  `defaultEmailAddress.emailAddress`, `defaultPhoneNumber.phoneNumber`,
+  `firstName`, `lastName` — never `email`, `phone`, `first_name`,
+  `last_name`. Confirmed failure: a build used the flat/snake_case guesses
+  on every field across an entire workflow — every one resolved to `null`.
+  Every earlier build got this right by actually checking the trigger's
+  real output; this one assumed a generic customer-record shape instead.
+  Check the real shape every time — don't fall back to what a "typical"
+  API's customer object usually looks like.
 - **Shopify — GraphQL create/update actions wrap the result under the
   entity's own name.** `Create Product` returns
   `{ userErrors, product: { id, title, variants: {...}, ... } }` — not a
