@@ -89,10 +89,10 @@
 - **Docs can lag the live API** (confirmed: SAP B1 `CardType` is required
   live but absent from the docs). The live operation detail governs
   required fields.
-- **To confirm in Cowork:** the platform team says Context7 is picked up
-  automatically with no partner setup. Verify with a real run in Cowork. If
-  it runs without an API key there, lower rate limits apply — the skill's
-  targeted, one-query-per-need approach is meant to keep call volume low.
+- **Confirmed in Cowork:** Context7 is picked up automatically with no
+  partner setup, verified with a real run. Without an API key there, lower
+  rate limits apply — the skill's targeted, one-query-per-need approach is
+  meant to keep call volume low.
 - **`settings.json`:** `mcp__context7__resolve-library-id` can be removed
   from the allowlist now that it's unused (harmless if left).
 

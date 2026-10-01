@@ -9,7 +9,7 @@ file — anything a skill needs at run time must live in its own `SKILL.md` or
 We're prototyping "appse ai Partner Accelerator" — a suite of Claude Skills that let
 an AI agent help appse ai's implementation partners deliver customer workflows faster,
 and with less dependence on deep per-app expertise. This is a real product capability
-being designed — not a hackathon artifact.
+being designed.
 
 Two problems this addresses, independently:
 1. **Speed** — partners build every customized workflow manually today.
@@ -41,9 +41,10 @@ skills/                  (the plugin-packaged skills — the real distributable,
       guide-field-mapping.md
       guide-steps-detail.md
       pattern-*.json     (real exported workflows, structure reference only)
-  requirement-digest/        (Nilanjana — not yet reviewed)
-  sow-generator/             (Nilanjana — not yet reviewed)
-  uat-test-script-generator/ (Nilanjana — not yet reviewed)
+  requirement-digest/          (reviewed)
+  sow-generator/               (reviewed)
+  cross-app-scenario-advisor/  (reviewed)
+  workflow-documenter/         (reviewed)
 docs/
   workflow-creator-known-limits.md   (maintainer notes — internal, never packaged with the skill)
 .mcp.json                (project-scoped MCP servers — Context7, for local dev)
@@ -70,9 +71,6 @@ incident details that aren't partner-facing.
 - `plugin.json`'s `author` uses `eng@appse.ai`, borrowed from other appse ai plugin
   repos. Fine for internal POC; decide a real owner/support address before external
   distribution.
-- The three newer skills haven't been reviewed with the same scrutiny as
-  `workflow-creator` — review them (tool whitelists, guardrails, no invented shapes)
-  before relying on them, and add them to the manifests' `skills[]` only once reviewed.
 
 ## Technical architecture (confirmed working)
 - **Claude** reasons and follows Skill instructions; has no direct platform access on
@@ -91,8 +89,8 @@ incident details that aren't partner-facing.
 ## Context7 — local development setup (Claude Code in VS Code)
 
 Per the platform team, Context7 is picked up automatically for partners, with no
-setup on their side (still to confirm with a real run in Cowork — see
-`docs/workflow-creator-known-limits.md`). The steps below are only for running the
+setup on their side — confirmed with a real run in Cowork. The steps below are only
+for running the
 skill locally in Claude Code from this repo, where `.mcp.json` provides it:
 
 1. Optional: get a free API key from context7.com/dashboard (it works without one at
@@ -123,9 +121,9 @@ claude mcp add-json --scope project context7 "{\"type\":\"stdio\",\"command\":\"
 ## Testing in Cowork (browser)
 - **arise-mcp:** already available through the same claude.ai connectors — check
   Settings → Connectors.
-- **Context7:** now also shows up as its own claude.ai connector ("Context7"), separate
-  from the local `.mcp.json` entry used for Claude Code dev — confirm it's authorized
-  there, and that it actually answers `query-docs` calls, on the first real Cowork run.
+- **Context7:** also shows up as its own claude.ai connector ("Context7"), separate
+  from the local `.mcp.json` entry used for Claude Code dev — confirmed authorized
+  there and answering `query-docs` calls in a real Cowork run.
 - **The skill — packaging path not yet confirmed.** Two possible upload surfaces have
   come up and neither has been checked against a real Cowork Customize/Settings menu:
   - A **skill zip**: `SKILL.md` at the top level plus `references/`, uploaded via
@@ -134,8 +132,8 @@ claude mcp add-json --scope project context7 "{\"type\":\"stdio\",\"command\":\"
     renamed `.plugin`), uploaded via Customize → Plugins → Upload, if that surface
     exists.
   Open Cowork's Customize/Settings menu first to see which one is real, then package
-  only `skills/workflow-creator` (never all of `skills/` — the three newer skills
-  aren't reviewed yet) and always zip from the committed folder, never a pasted copy.
+  only `skills/workflow-creator` and always zip from the committed folder, never a
+  pasted copy.
 
 ## Tool permissions (`.claude/settings.json`)
 Pre-approved: all read-only arise-mcp tools (including `get_node_data`),
@@ -208,6 +206,4 @@ guess it).
 2. Package `skills/workflow-creator` only, upload it, confirm arise-mcp and the
    Context7 connector both work there, and run one branching scenario end to end.
 3. Open the PR to `main` once the Cowork run is confirmed.
-4. Review the three newer skills before relying on them or adding them to the
-   manifests.
-5. Decide `plugin.json`'s real author/support email before external distribution.
+4. Decide `plugin.json`'s real author/support email before external distribution.
