@@ -6,7 +6,7 @@ real data, unmodified unless its section below lists a correction — do not
 edit field values, only read structure from them (same rule as the original
 single reference workflow).
 
-## pattern-dedupe-skip-return-request.json
+## pattern-dedupe-skip-return-request.md
 
 **Demonstrates:** dedupe via search-before-write, skip silently if found.
 Trigger (WooCommerce order cancelled) → search SAP for an existing return
@@ -15,7 +15,7 @@ request (stable key: `U_WEBORDID`) → `FilterNode` → `DecisionNode` on
 The `true` branch (already exists) is a dead end — no action taken.
 **Status: approved reference for dedupe-and-skip.**
 
-## pattern-dedupe-create-or-update-customer.json
+## pattern-dedupe-create-or-update-customer.md
 
 **Demonstrates:** the real create-vs-update pattern. Trigger (D365 BC
 customer created) → search Magento2 by email → `DecisionNode` "Customers
@@ -23,7 +23,7 @@ exist" → **both branches wired**: `false` → `Create a customer`, `true` →
 `Update a customer` (with a `customerId` pulled from the search result).
 **Status: approved reference for create-vs-update.**
 
-## pattern-dedupe-create-or-update-businesspartner-subrecords.json
+## pattern-dedupe-create-or-update-businesspartner-subrecords.md
 
 **Demonstrates:** a second, independent confirmation of create-vs-update —
 Trigger (Shopify customer updated) → search SAP B1 by email →
@@ -47,7 +47,7 @@ simpler replace-the-array behavior is universal.**
 **Status: approved reference for create-vs-update; use this file
 specifically when nested/sub-record fields are involved.**
 
-## pattern-dedupe-create-or-update-product.json
+## pattern-dedupe-create-or-update-product.md
 
 **Demonstrates:** create-or-update for **products**, in the usual direction —
 ERP is the product master, pushing to the store. Trigger (D365 BC items
@@ -94,7 +94,7 @@ as supplied):**
 **Status: reference for create-or-update of products (ERP → e-commerce).**
 Supplied 2026-09-24; tested status not stated — confirm with the team.
 
-## pattern-find-or-create-customer-then-order.json
+## pattern-find-or-create-customer-then-order.md
 
 **Demonstrates:** find-or-create a parent record, then create a child record
 that depends on it. Trigger (Shopify new order) → search D365 BC customer by
@@ -136,7 +136,7 @@ for multi-line orders.
 mappings (Shopify GID stripping via `substringAfter`, `type: "Person"`) are
 field values — never copy them; resolve them fresh per Steps 6–7.
 
-## pattern-sku-reconciliation-and-multibranch-order.json
+## pattern-sku-reconciliation-and-multibranch-order.md
 
 **Demonstrates:** three things in one workflow —
 
@@ -158,7 +158,7 @@ field values — never copy them; resolve them fresh per Steps 6–7.
    file only because it's real data; the skill should not replicate the
    AI-node portion of this shape without explicit sign-off.
 
-## pattern-parallel-branch-inventory-notification.json
+## pattern-parallel-branch-inventory-notification.md
 
 **Demonstrates:** independent parallel branches off a single trigger (not
 sequential) — one branch updates inventory directly on a stable key, a
@@ -280,7 +280,7 @@ Inside `advance_filter`, conditions in the same inner list are **AND**ed
   and-skip, not branching (no true/false split).
 - `SplitterNode` — fans out a **nested list inside each record** for
   per-element processing. The one real example
-  (`pattern-sku-reconciliation-and-multibranch-order.json`): trigger (new
+  (`pattern-sku-reconciliation-and-multibranch-order.md`): trigger (new
   orders) → Splitter (`properties: {}`) → `Get Item by ItemCode` reading the
   element with `$payload.sku` → Filter → `Create New Items`, where later
   nodes read the element as `$('Splitter').payload.<field>`. Note the
@@ -366,7 +366,7 @@ differ). Add rows for any app as new limits are found.
 - **Parent key required on a child record** → take it from the lookup
   node's result (`$('<search node>').payload.<key>`) on the "found" branch,
   or reuse the same derived value the parent was just created with on the
-  "not found" branch (see `pattern-find-or-create-customer-then-order.json`).
+  "not found" branch (see `pattern-find-or-create-customer-then-order.md`).
 
 ## Still not confirmed by any reference file
 

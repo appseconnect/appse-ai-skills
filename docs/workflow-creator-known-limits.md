@@ -132,14 +132,14 @@
 - **Create-or-update is backed by three real examples** (D365 BC → Magento2
   customer; Shopify → SAP B1 business partner, with the `RowNum`
   row-preservation detail for nested arrays; D365 BC → Magento2 product).
-- **`pattern-dedupe-create-or-update-product.json`** (supplied 2026-09-24,
+- **`pattern-dedupe-create-or-update-product.md`** (supplied 2026-09-24,
   tested status not stated — confirm with the team):
   - `attribute_set_id: "4"` is store-specific — treat as a company setting.
   - No blank-SKU guard; Decision checks `equal` only.
   - Update re-sends `status`/`visibility`, which can re-enable a product
     deliberately disabled in the store.
   - Trigger is "Items updated" — confirm it also fires for new items.
-- **`pattern-find-or-create-customer-then-order.json`:**
+- **`pattern-find-or-create-customer-then-order.md`:**
   - **Edited from the original export (disclosed in `conventions.md`):**
     `true`-branch `unitPrice` corrected from the order subtotal to the
     per-line price; missing `targetHandle` added to the last edge.

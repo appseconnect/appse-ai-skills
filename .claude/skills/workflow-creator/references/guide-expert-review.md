@@ -55,9 +55,9 @@ against the list. Never copy a name from a reference file (`'Splitter'`,
 **Real failure:** the blank-key incident above — an empty search filter
 meant "return everything".
 
-**Known instance in a reference:** `pattern-find-or-create-customer-then-order.json`
+**Known instance in a reference:** `pattern-find-or-create-customer-then-order.md`
 searches by customer email with no blank-email guard — same failure class.
-`pattern-dedupe-create-or-update-product.json` has no blank-SKU guard.
+`pattern-dedupe-create-or-update-product.md` has no blank-SKU guard.
 
 **Check:** every key used to find, match, or target a record (email, SKU,
 order number, external ID) needs a Filter using `is_not_empty` (preferred
@@ -91,7 +91,7 @@ verified in checks 3 and 4.
 
 ## 6. What will the first run pick up?
 
-**Seen in references:** `pattern-dedupe-create-or-update-product.json` has a
+**Seen in references:** `pattern-dedupe-create-or-update-product.md` has a
 trigger start date months in the past (2026-02-19) — a new build copied
 from it would reprocess every item changed since then.
 
@@ -114,7 +114,7 @@ partner wants those fields synced, that's a "must ask".
 
 ## 8. Does everything this record points to exist in the target?
 
-**Seen in a reference:** `pattern-find-or-create-customer-then-order.json`
+**Seen in a reference:** `pattern-find-or-create-customer-then-order.md`
 checks the customer exists, but not that each order line's product does.
 A missing item would make the target reject the whole order.
 

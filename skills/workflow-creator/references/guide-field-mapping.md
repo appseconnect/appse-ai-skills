@@ -53,7 +53,7 @@ value:
    and keys. **Never invent a function name** — if you need one that isn't
    in `conventions.md`, query the docs first.
 3. **Approach from a reference file** — how a reference filled the same
-   kind of field (e.g. `pattern-find-or-create-customer-then-order.json`
+   kind of field (e.g. `pattern-find-or-create-customer-then-order.md`
    sets the Business Central customer number from the Shopify customer's
    numeric ID). Reuse the *approach*, re-derived for this workflow's own
    payload and node names — never paste the reference's literal

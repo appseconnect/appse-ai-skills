@@ -40,7 +40,7 @@ skills/                  (the plugin-packaged skills — the real distributable,
       guide-expert-review.md
       guide-field-mapping.md
       guide-steps-detail.md
-      pattern-*.json     (real exported workflows, structure reference only)
+      pattern-*.md       (real exported workflows, structure reference only)
   requirement-digest/          (reviewed)
   sow-generator/               (reviewed)
   cross-app-scenario-advisor/  (reviewed)

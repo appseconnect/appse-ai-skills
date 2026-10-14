@@ -50,7 +50,7 @@ needs them, and ask every open question in one round inside Step 9.
 ## Working speed
 - **Don't create a task/todo list** for a build — just work through the steps.
 - **Read each file at most once per session.** Read `conventions.md` once, at
-  Step 8. Open a `pattern-*.json` or `guide-*.md` only when a specific detail
+  Step 8. Open a `pattern-*.md` or `guide-*.md` only when a specific detail
   you need isn't in this file or `conventions.md` — never "to be safe".
 - **Don't re-call a tool** whose result you already have in this session
   (org, apps, credentials, operations, field details, a docs answer) unless
@@ -75,7 +75,7 @@ needs them, and ask every open question in one round inside Step 9.
 | `guide-field-mapping.md` | Step 6 — a mandatory field has no direct source, an array/object field is involved, or a company-specific setting is needed |
 | `guide-expert-review.md` | Before Step 9 on anything beyond a simple one-trigger/one-action sync — the full review with the real failures behind it |
 | `guide-building-blocks.md` | Composing a shape, choosing a reference pattern, or a docs lookup acting oddly |
-| `pattern-*.json` | Only if `conventions.md` doesn't show a detail you need for that exact pattern — read one, not all |
+| `pattern-*.md` | Only if `conventions.md` doesn't show a detail you need for that exact pattern — read one, not all |
 | `guide-steps-detail.md` | Full wording for Tone, Asking Questions, and Output Rules, when a condensed rule here isn't enough |
 
 ---
@@ -94,6 +94,11 @@ needs them, and ask every open question in one round inside Step 9.
   'Workflow 9' — rename it to something clearer next time you're in the
   appse ai UI"*, not *"the tool doesn't expose a rename"*. Applies to Step 9,
   Step 11, and every question. (Internal sections of this file are exempt.)
+- **Translate internal pattern jargon into plain English** — never surface
+  the internal pattern name itself (e.g. "dedupe-and-skip", "SKU
+  reconciliation") in partner-facing text. Describe what it does in one
+  plain line instead (e.g. "a search-then-skip check, so it never creates a
+  duplicate"). Applies to Step 9 and every question.
 
 ---
 
@@ -331,11 +336,11 @@ one-trigger/one-action sync.**
 | Pattern | File | Use when |
 |---|---|---|
 | Simple sync | No dedicated file — `conventions.md`'s node/edge envelope covers it | One trigger, one action, no branching |
-| Dedupe-and-skip | `pattern-dedupe-skip-return-request.json` | "Don't create duplicates", no update |
-| Create-or-update | `pattern-dedupe-create-or-update-customer.json`, `-businesspartner-subrecords.json` (nested arrays with row IDs), `-product.json` (ERP → store products — see `conventions.md` for its flaws, incl. store-specific `attribute_set_id`) | Update if found, create if not |
-| Find-or-create parent, then child | `pattern-find-or-create-customer-then-order.json` (see `conventions.md`: no guard against a blank source email) | Child (order) needs a parent (customer) that may not exist |
-| Item reconciliation with a Splitter | `pattern-sku-reconciliation-and-multibranch-order.json` (Splitter → lookup → Filter → create portion only) | Each element of a list inside a record needs its own check/create |
-| Parallel branches | `pattern-parallel-branch-inventory-notification.json` | Several independent actions off one trigger |
+| Dedupe-and-skip | `pattern-dedupe-skip-return-request.md` | "Don't create duplicates", no update |
+| Create-or-update | `pattern-dedupe-create-or-update-customer.md`, `-businesspartner-subrecords.md` (nested arrays with row IDs), `-product.md` (ERP → store products — see `conventions.md` for its flaws, incl. store-specific `attribute_set_id`) | Update if found, create if not |
+| Find-or-create parent, then child | `pattern-find-or-create-customer-then-order.md` (see `conventions.md`: no guard against a blank source email) | Child (order) needs a parent (customer) that may not exist |
+| Item reconciliation with a Splitter | `pattern-sku-reconciliation-and-multibranch-order.md` (Splitter → lookup → Filter → create portion only) | Each element of a list inside a record needs its own check/create |
+| Parallel branches | `pattern-parallel-branch-inventory-notification.md` | Several independent actions off one trigger |
 
 ---
 
@@ -604,7 +609,7 @@ docs for any other operator before using it.
 Read `conventions.md` for the node/edge envelope, condition shapes, and
 Splitter config, and assemble the flow from building blocks — this covers
 the plain one-trigger/one-action envelope too, so no live workflow fetch is
-needed for any pattern. Read **one** `pattern-*.json` only if
+needed for any pattern. Read **one** `pattern-*.md` only if
 `conventions.md` doesn't show a detail you need for that exact pattern.
 Apply structure only — never a reference's field values, credential IDs,
 node names, or app-specific mappings. A custom or mixed shape is fine — say
@@ -645,16 +650,26 @@ Tone guidance above):
 
 > I'm about to build a workflow in **{org}**: when **{trigger, in source_app}**
 > happens, **{action, in target_app}**, for entity type **{entity_type}**,
-> using the **{structural_pattern}** shape, with these field mappings:
+> using {one plain-English line describing what the structural pattern
+> does — never its internal name, e.g. "a search-then-skip check, so it
+> never creates a duplicate" instead of "the dedupe-and-skip shape"}, with
+> these field mappings:
 > {list of direct mappings, marking any not cross-checked against
 > documentation}.
+>
+> {If the trigger is polling-based, one plain fact line stating cadence,
+> batch size, and start point, e.g. "Checks for new customers every 3
+> minutes, up to 10 at a time, starting from now." Keep this separate from
+> the business-logic walkthrough below — it's a technical fact, not a
+> step.}
 >
 > **Mappings I worked out for you — please check:**
 > - **{target field}** ← `{expression}` — {one-line reason, e.g. "Customer
 >   number is required, so I'm using the Shopify customer's numeric ID"}
 >
 > {If this is a custom flow built from their rules rather than a known
-> pattern, say so and walk through it in plain steps, e.g. "1. New Shopify
+> pattern, say so and walk through the business logic only in plain steps —
+> never include trigger cadence or batch size here — e.g. "1. New Shopify
 > order → 2. look up the customer by email → 3. if found, create the order
 > for them; if not, create the customer first, then the order."}
 >
@@ -676,9 +691,14 @@ Tone guidance above):
 > highest risk first — as one numbered list, Q1 … Q2 …, each with your
 > recommended answer}
 >
+> **If you say "go ahead," I'll use:** {a numbered recap of just the
+> recommended answers, one per question, e.g. "Q1: C + Shopify ID, Q2: no
+> address sync" — so the partner can see at a glance what accepting
+> defaults means before replying}
+>
 > If you'd like any of these mapped differently, tell me what to use and
-> I'll update it. Reply with your answers (e.g. "1: USD, 2: yes"), or "go
-> ahead" to use my recommendations.
+> I'll update it. Reply like "1: <your answer>, 2: <your answer>", or say
+> "go ahead" to use the recommended answers above.
 
 This one message also confirms the Step 0 plan and workflow count for a
 single-workflow request. Wait for explicit confirmation. Do not proceed on
@@ -789,7 +809,7 @@ of what an internal tool does or doesn't support (see Tone).
   A separate grant from arise-mcp — never use one to justify expanding the
   other.
 - **Local files:** this skill's own `references/` folder only — the
-  `pattern-*.json` files, `conventions.md`, and the `guide-*.md` notes. Never read or infer structure from anywhere else.
+  `pattern-*.md` files, `conventions.md`, and the `guide-*.md` notes. Never read or infer structure from anywhere else.
 - **Zoho Desk (only when present in your own tool list — never assumed):**
   `searchTickets` and `createTicket` — used only for the app-not-in-catalog
   offer in Steps 1–3, nothing else. *(Names as observed live; confirm the
