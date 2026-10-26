@@ -1,0 +1,256 @@
+# workflow-creator — Field Mapping (detail behind Step 6)
+
+*SKILL.md is the single source of truth for Step 6 and Step 7 — the step instructions are not repeated here, so the files can't drift apart. This file holds the fuller detail and examples for the Step 6 cases SKILL.md points to: nested fields, the mapping ladder, company-specific settings, unknown inner shapes, required fields the partner wants auto-generated, and required sources that won't exist. If this file and SKILL.md ever disagree, SKILL.md wins — fix this file to match.*
+
+## Where field information comes from
+
+Three sources, each with its own job:
+
+| Source | What it decides | How to use it |
+|---|---|---|
+| **Live `get_operation_detail`** | Which fields are **required** | Call it for every chosen operation. It governs when it disagrees with the docs (e.g. SAP B1 `CardType` is required live but missing from the docs). |
+| **Docs** (`query-docs` on `/appseconnect/appse-ai-docs`) | Real field **names, nesting, and example records** | One targeted query per operation, e.g. "Shopify new customers created trigger fields and example", "SAP Business One create business partner required fields". Shows nesting a guess would miss (Shopify `defaultEmailAddress.emailAddress`, not `email`). |
+| **`conventions.md` and reference files** | The exact **saved JSON** and known nested sub-fields | The nested-fields table lists sub-fields the live detail doesn't show. |
+
+If the docs are unavailable, don't stall — use the live detail alone and
+mark the affected mappings "not cross-checked against documentation".
+
+---
+
+## Nested fields count too
+
+The live operation detail often lists an array or object (e.g. SAP
+`ItemPrices`, Business Central `salesOrderLines`) with **no inner schema,
+even marked optional** — while the portal requires fields inside each
+element (e.g. `PriceList`, `Price`, **`Currency`**).
+
+- The moment you include an array element or object, treat **every
+  sub-field** that the docs, a reference file, or `conventions.md`'s
+  nested-fields table show for it as mandatory, and fill each one via the
+  ladder below.
+- Never include an element with any sub-field left blank — fill it
+  completely, or leave the whole element out and say so in Step 9.
+- When you find a new nested requirement, add it as a row to
+  `conventions.md`'s nested-fields table.
+
+---
+
+## The mapping ladder (full detail)
+
+**Every mandatory target field must get a value — never leave one empty or
+send `""`.** An empty mandatory field is a broken workflow, not a cautious
+one. Work down the ladder and use the first rung that gives a sensible
+value:
+
+1. **Direct source field** — a matching field in the source payload,
+   confirmed by docs or the live call (e.g. email → email).
+2. **Derived with an expression function** — build the value from source
+   fields using a function confirmed in `conventions.md`, or confirmed by a
+   targeted docs query (e.g. "expression substringAfter"). Examples: strip a
+   Shopify GID to its numeric ID with `substringAfter`, join first + last
+   name, take the date part of a timestamp with `substringBefore`, convert
+   text to a number with `to_number()`. This is usually the answer for IDs
+   and keys. **Never invent a function name** — if you need one that isn't
+   in `conventions.md`, query the docs first.
+3. **Approach from a reference file** — how a reference filled the same
+   kind of field (e.g. `pattern-find-or-create-customer-then-order.md`
+   sets the Business Central customer number from the Shopify customer's
+   numeric ID). Reuse the *approach*, re-derived for this workflow's own
+   payload and node names — never paste the reference's literal
+   expression.
+4. **Sensible constant** — a fixed value that's the same in every
+   installation (e.g. customer type `Person` for Shopify shoppers,
+   `lineType: "Item"`). **Read the exact value from the operation's own
+   field description — never from general platform/SDK knowledge, even
+   knowledge that's usually right.** A platform's underlying API can use a
+   different literal than the operation actually expects. Confirmed
+   failure: SAP B1's `create_businesspartner` describes `CardType` as
+   single letters — `"C - Customer, S - Supplier, L - Lead"` — but a build
+   sent `"cCustomer"` (the SAP DI-API's own internal enum name, not what
+   this operation asked for), and every create call failed. The correct
+   value is `"C"`, exactly as the operation's own description states.
+   **Never** for company-specific settings — see below.
+5. **Ask** — only if no rung above gives a plausible value. It's a "must
+   ask" question in Step 9: name the field and what it's for, with a
+   recommended answer if you have one.
+
+**Rungs 2–4 are proposed mappings:** fine to use, but list each under
+"Mappings I worked out" in Step 9 and again in Step 11, with a one-line
+reason, so the partner can see and override it. Proposing an informed
+mapping and saying so is expected; silently inventing one, or leaving the
+field blank, is not.
+
+**Optional fields with no source:** leave them out rather than sending a
+blank — a blank optional field on an update can wipe a value the target
+already holds. If a default value would make sense, check the docs for a
+confirmed default-value form (e.g. "expression default value when field is
+missing") before using one — don't assume a syntax.
+
+---
+
+## Company-specific settings — never copied or guessed
+
+Values that depend on how the customer's system is configured differ in
+every installation: currency code, price list number, warehouse, item
+group, tax/VAT code, posting groups, number series, company, sales channel.
+A reference workflow's value (e.g. SAP `Currency: "$$"`, `PriceList: "1"`)
+only proves what worked in *that* customer's system; using it here is a
+guess.
+
+Resolve them in this order only:
+
+1. **The source record carries it** — map it (e.g. a currency code on the
+   order or price in the source payload).
+2. **A lookup operation can fetch it at run time** — check
+   `list_operations` on the target (or source) app for a get/list action
+   that returns it (e.g. "get default warehouse", "get price lists"). If
+   one exists, add it as a lookup node before the write and map from its
+   result; explain it in Step 9.
+3. **Otherwise it's a "must ask" question in Step 9** — ask for the exact
+   code **as defined in the target system**, not the general name, and say
+   briefly why you're asking (it's specific to their system and nothing
+   exposes it). Check a real record in the docs first to show the expected
+   format — e.g. SAP B1's "Items Updated" example uses `"Currency": "$"`.
+   A live build failed on `"USD"` because that SAP company's code was `"$"`.
+
+Never fill these from ladder rung 3 or 4.
+
+---
+
+## Type and format
+
+Valid JSON isn't enough — the target's API decides.
+
+- **Find the expected type** from the live detail (top-level types), then a
+  **real record of the same entity from the target** in the docs (trigger
+  or get-action example results), then a run's node output if payload
+  access is enabled.
+- **Numbers go out as numbers.** Source apps like Shopify return prices as
+  text (`"100.00"`). Wrap numeric fields with `to_number()`, e.g.
+  `{{to_number($('Has SKU').payload.price)}}`, and give numeric constants as
+  `{{to_number('1')}}`.
+- **Codes must exist in the target system** (see company-specific settings
+  above).
+
+---
+
+## Special cases
+
+**Unknown inner shape of an object or array.** If the live detail says a
+`product` object or a `media` array is required but not what's inside it,
+that isn't enough to map against. Resolve the shape from:
+1. a targeted docs query for that operation's example payload,
+2. a reference file that shows the same object, or
+3. `conventions.md`'s nested-fields table.
+
+If none of these shows it, it's a "must ask" question — don't guess the
+inner fields. (Once the shape is known, filling its mandatory fields
+follows the ladder above.)
+
+**A required field the partner wants the target to generate.** If the
+partner says the target should number records itself (e.g. "use Business
+Central's own numbering") but the live call still marks the field required,
+don't send it empty. Propose a derived value (ladder rung 2 or 3) and
+explain in Step 9 that the connector requires the field, so the target's
+own numbering can only be used if they confirm the field can be left out.
+
+**A required source that won't exist.** If a mandatory field's real-world
+data is unlikely to exist in the source (e.g. an action requires
+images/media but the source's records don't carry structured media), say so
+plainly and recommend a simpler alternative operation if one exists (e.g.
+Shopify `create_product` instead of `create_product_options_and_media`),
+rather than building something that would fail on every run.
+
+---
+
+## Confirmed app-specific quirks (check these before you map)
+
+Real, confirmed facts about specific apps' operations — add to this list
+only when a build actually confirms one; never add a guess here.
+
+- **SAP Business One — `CardType`:** the operation's own description gives
+  single letters (`"C"`/`"S"`/`"L"`), not the DI-API's internal enum name
+  (`cCustomer`/`cSupplier`/`cLid`). See the mapping ladder above.
+- **SAP Business One — `Currency`:** the code is whatever that company
+  defined in their own system (e.g. `"$"`), never assume the ISO code
+  (`"USD"`). See Company-specific settings above.
+- **SAP Business One — `State`/province code on an address:** must be a
+  code SAP itself has configured for that country, not whatever the source
+  app sends. Confirmed failure: a build passed Shopify's `provinceCode`
+  (e.g. `"TS"`, `"WB"`) straight through to `BPAddresses[].State`, and SAP
+  rejected it as not a valid state code for that company's setup. Same
+  category as `Currency` — check whether the target app has a lookup
+  operation for valid state/province codes before assuming the source
+  app's code carries over; if none exists, this is a "must ask" per
+  Company-specific settings, not a direct copy.
+- **Shopify — a customer's email, phone, and name are nested and
+  camelCase, not flat or snake_case.** The real fields are
+  `defaultEmailAddress.emailAddress`, `defaultPhoneNumber.phoneNumber`,
+  `firstName`, `lastName` — never `email`, `phone`, `first_name`,
+  `last_name`. Confirmed failure: a build used the flat/snake_case guesses
+  on every field across an entire workflow — every one resolved to `null`.
+  Every earlier build got this right by actually checking the trigger's
+  real output; this one assumed a generic customer-record shape instead.
+  Check the real shape every time — don't fall back to what a "typical"
+  API's customer object usually looks like.
+- **Shopify — GraphQL create/update actions wrap the result under the
+  entity's own name.** `Create Product` returns
+  `{ userErrors, product: { id, title, variants: {...}, ... } }` — not a
+  flat `{ id, title, ... }`. A later node reading this action's output must
+  include the wrapper (e.g. `payload.product.id`, not `payload.id`) —
+  confirmed failure when a node assumed the flat shape and the read-back
+  came through empty. Check every Shopify GraphQL action's real output
+  shape the same way before writing a read-back expression — don't assume
+  this one example covers every action.
+- **SAP Business One — Service Layer get/list actions wrap every record in
+  an OData `value` array.** `Get Item(s)` (and the same pattern applies to
+  other Service Layer get/list actions) returns
+  `{ "odata.metadata": ..., value: [ { ItemCode, ItemName, ... } ] }` — the
+  record is `value[0]` (or the loop index inside a Splitter), never
+  top-level `payload.ItemCode`. Confirmed failure: a Filter mapped
+  `{{$payload.ItemCode}}`, resolved to `null` (no error, just silently
+  wrong), corrected to `{{$payload.value[idx].ItemCode}}`. This is the same
+  envelope problem as the Shopify entry above, just a different app and a
+  different wrapper shape (`value[]` array, not a named object) — check
+  every SAP B1 get/list action's real output the same way; don't assume
+  either example covers the other.
+- **`[idx]` in an expression only means something inside an actual
+  `SplitterNode`'s own iteration.** It is not a general-purpose "give me an
+  array element" token. Confirmed failure: a build with **no Splitter
+  anywhere in the flow** wrote
+  `{{$payload.BPAddresses[idx].RowNum}}` on an Update node — real records
+  went through, `idx` resolved to nothing usable, and the update failed on
+  every record across two separate builds of the same shape. This was
+  copied from a reference pattern's RowNum-preservation example without
+  checking whether *this* workflow actually has the Splitter that example
+  depended on. If there's no Splitter, reference a specific element
+  (`[0]`) or a real filter expression instead — never carry `[idx]` over
+  from a reference file on faith.
+- **A bare `addresses[]` reference (no index) inside a nested object
+  duplicates the whole object once per array element — it does not just
+  return the wrong type.** Confirmed by the real platform error, three
+  builds in a row: `{{$payload.addresses[].city}}` (and the same pattern
+  for state, street, country, zip, name) inside a single `BPAddresses`
+  entry produced **one full `BPAddresses` object per address the Shopify
+  customer has on file** — 7+ duplicated entries from one written
+  template, all sharing the same `AddressType`, sent to SAP B1's
+  `create_businesspartner` / `update_businesspartner`. Both failed with
+  `BadRequest request body data is invalid`. Shopify already exposes the
+  customer's primary address as a **singular** field —
+  `defaultAddress.city`, `defaultAddress.address1`, etc. — use that
+  instead of indexing into `addresses[]` yourself. This is the same shape
+  the earlier, working build (Workflow 30) used correctly — don't regress
+  to the bare-array form even though both read as plausible expressions.
+  **General rule, not just this field:** never write a bare `[]` (no
+  index, no filter) inside a nested object you're building — check what it
+  actually does to the surrounding object, not just the one field, before
+  trusting it.
+- **Never send `""` for a field with no resolvable value — inside a
+  nested array object, exactly like at the top level.** Confirmed in the
+  same error: `RowNum: ""` and `Phone1: ""` were sent when neither had a
+  real value (no existing SAP address row to preserve a `RowNum` from; no
+  phone on the source record). The existing "leave it out rather than
+  sending a blank" rule already covers this — it just wasn't applied
+  inside a nested `BPAddresses` entry. If a nested optional field has no
+  value, drop that key from the object entirely; don't assume the
+  top-level rule doesn't reach inside arrays.

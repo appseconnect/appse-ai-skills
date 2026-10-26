@@ -1,0 +1,597 @@
+---
+name: sow-generator
+description: >
+  Turns a Requirement Digest into a formal Scope of Work — named account,
+  objectives, requirements, dependencies, out-of-scope items, indicative
+  timeline —
+  via arise-mcp app-catalog cross-checks. Use when a partner has a completed
+  Requirement Digest and needs it turned into a customer-facing SOW, or asks
+  to "draft a SOW," "write the scope of work," or "turn this digest into a
+  proposal document." Always asks for the partner's own SOW format first;
+  falls back to a generic industry-standard structure only if none is given.
+  Never assumes — asks the partner about anything unclear (scenario,
+  business use case, applications, customizations) before drafting, and
+  produces a clear, measurable, industry-standard SOW.
+  Always delivers the final SOW as a Word (.docx) or PDF file, ready to send
+  to the customer.
+  Not for estimating effort or team size — that's a separate downstream
+  skill that consumes this one's output.
+license: Internal — appse ai Partner Accelerator
+---
+
+# sow-generator — Turn a Requirement Digest into a Formal SOW
+
+Converts a completed Requirement Digest into the document a partner can put
+in front of a customer. The Requirement Digest's confidence-tagging is not
+discarded here — it's the mechanism this skill uses to decide what becomes a
+firm scope statement (Stated) versus what must be confirmed with the partner
+before it can go in the SOW (Inferred or Missing → Step 1A questions). That
+link is what keeps the SOW honest about what the discovery call actually
+established.
+
+**The failure mode this skill exists to prevent:** a SOW that reads as
+confidently as if every line were confirmed, when in reality half of it was
+inferred from a single vague sentence in a discovery call. A customer reading
+the SOW has no way to tell the difference unless the document tells them.
+
+**Core principles (apply to every SOW):**
+1. **No guessed content.** If anything about the scenario, the business use
+   case, the applications, or the scope is unclear, ask the partner before
+   drafting (Step 1A). (An application that isn't available in appse ai
+   doesn't block the SOW — its connection becomes part of the scope.) Never
+   fill a gap with a guess, and never move a guess into the SOW as an
+   "assumption" for the customer to catch later.
+2. **Clear, measurable objectives** — each tied to a business outcome and a
+   way to measure it — and an explicit answer on customizations (Step 4).
+3. **A convincing, industry-standard plan** — a phased delivery approach,
+   measurable acceptance criteria, change control, risks, and support, in
+   confident professional language (Steps 1 and 8A).
+
+---
+
+## Tool Reference (arise-mcp, read-only)
+
+Optional, used only in Step 3: `list_apps` and `list_operations`, to name
+real appse ai capabilities in the Deliverables section (e.g. citing the
+Autonomous Workflow Builder or a specific confirmed app connector) rather
+than generic language. If `org_id` isn't given or the lookup isn't
+available, skip this and write Deliverables in plain functional terms
+instead — never fabricate a named capability to sound more specific.
+
+No write tool is used. This skill never creates, saves, or modifies a
+workflow, and never touches pricing or commercial terms — those belong to a
+separate process entirely (see Step 8).
+
+---
+
+## Reference Example (illustrative — shape only)
+
+> **Scope of Work — Acme Distribution Co.**
+> **Prepared for:** Acme Distribution Co. | **Date:** [date] | **Reference:** [deal/opportunity ID]
+>
+> **Objectives:** Eliminate manual re-entry of Shopify orders into SAP Business One, reducing order-to-fulfillment delay and manual data-entry errors.
+>
+> **Deliverables:**
+>
+> 1. Automated sync: new Shopify orders create matching SAP Business One sales orders, including line items
+> 2. Duplicate-order prevention on the SAP B1 side
+> 3. Customer/Business Partner record creation for new Shopify customers
+>
+> **Dependencies:** _(what the customer provides — each one needed for this scope)_
+>
+> - SAP Business One and Shopify admin access, and a test environment, before build starts
+> - A business owner for UAT, with sign-off within 5 business days of each test cycle
+>
+> **Out of Scope:** _(only items the customer might reasonably expect to be included)_
+>
+> - Migrating historical orders placed before go-live
+> - Returns and refunds (candidate for a later phase)
+>
+> **Indicative Timeline:** 2–3 weeks from kickoff to go-live _(detailed effort and team sizing to follow from the Effort and Team Estimator)_
+
+---
+
+## Inputs
+
+| Field                | Required | Source                                                     | Description                                                                                                                                        | Default                                           |
+| -------------------- | -------- | ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| `requirement_digest` | ⬜ (recommended) | User provides — or a raw brief / call notes instead                                              | The completed digest from `requirement-digest` (shown to partners as the "Discovery Summary") — recommended; raw briefs or notes are also accepted, see Step 0 — readiness signal, five confidence-tagged fields, vocabulary map, vertical signals, open questions | —                                                 |
+| `sow_format`         | ⬜       | User provides, if asked in Step 0                          | The partner's own SOW template or house format                                                                                                     | none — falls back to the generic format in Step 1 |
+| `org_id`             | ⬜       | User confirms, only if capability cross-checking is wanted — re-resolve every run, never reused from an earlier run or conversation | Which appse ai org's catalog to cite real capabilities from in Step 3                                                                              | skip cross-check if not given                     |
+
+---
+
+## Workflow
+
+Follow these steps in order. Do not skip or reorder.
+
+### Step 0 — Check What the Partner Wants, Then Ask for the SOW Format
+
+**First, make sure a SOW is actually what's being asked for.** If the
+partner's message is a request to *build* something (e.g. "When X happens,
+create Y … Build it in <org>"), that's `workflow-creator`'s job, not a SOW
+— even if a SOW was discussed earlier in the conversation. Ask in one line
+("Do you want me to build this workflow, or write a SOW for it?") rather
+than assuming.
+
+**Then check the input.** The best input is a **Discovery Summary** (the
+output of `requirement-digest`; use that name, not "Requirement Digest",
+with partners) — its Stated/Inferred tags are what keep the SOW honest. It
+is **recommended, not required**:
+- If the partner gives a Discovery Summary, use it as described in Steps
+  2–8.
+- If they give raw material instead (a brief, call notes, requirements),
+  offer once: _"I can turn this into a Discovery Summary first, which
+  separates what the customer confirmed from what we're assuming — or I can
+  draft the SOW straight from it. Which would you prefer?"_ If they choose to
+  draft directly, do so: treat what the material states plainly as
+  deliverables, and turn everything you'd otherwise have to infer into
+  clarifying questions (Step 1A) — never into assumptions.
+- Only if there's essentially nothing to work from (e.g. "write a SOW for
+  Shopify to SAP" and nothing else), ask for the brief or notes before
+  drafting.
+
+Then, **before drafting anything**, ask whether the partner has their own SOW
+template or house format they want this followed against (a document to
+paste in, a described structure, a named section order). This is not
+optional to skip past — always ask once per SOW, even if a format was used
+in a prior conversation, since formats can vary by customer or contract
+type.
+
+- If a format is given, use its exact section names, order, and structure —
+  map this skill's required content (Steps 4–8) into it rather than forcing
+  the generic structure on top.
+- If no format is given, or the partner says to just use a default, fall
+  back to the **generic format in Step 1** — do not invent a bespoke
+  structure of your own beyond that.
+
+### Step 1 — The Generic Fallback Format
+
+When no partner format is given, use this structure, in this order —
+matching common industry SOW convention and appse ai's own partner support
+model (Steps 4–8 below map onto it directly). The exact section order,
+headings, and placeholder style are fixed in
+`references/generic-sow-template.md` — use it verbatim for Step 11's file so
+every fallback-format SOW looks the same across runs, not redrafted from
+scratch each time:
+
+1. Header — account name, date, deal/opportunity reference
+2. Background — brief context from the digest (one short paragraph)
+3. Objectives — measurable business outcomes (Step 4)
+4. Requirements & Deliverables — the confirmed scope, including agreed
+   customizations (Step 5)
+5. Project Approach & Milestones — the phased delivery plan (Step 8A)
+6. Dependencies — what the customer must provide for this scope (Step 6)
+7. Out of Scope — short, and only items the customer might reasonably
+   expect to be included (Step 7)
+8. Indicative Timeline
+9. Roles and Responsibilities — partner vs. customer vs. appse ai, reflecting
+   the real support split (partner owns workflow logic, mappings, and
+   business rules; appse ai owns core platform, connectors, and
+   infrastructure)
+10. Acceptance Criteria — how the customer confirms deliverables are met,
+    each one measurable and testable
+11. Change Control — how scope changes are requested, assessed, and approved
+12. Risks & Mitigations — the real delivery risks for this scope, each with
+    a mitigation
+13. Support & Hypercare — the post-go-live support window and what it covers
+14. Commercial Terms — a reference/placeholder line only ("commercial terms
+    per the accompanying quote/contract"); this skill never drafts pricing
+15. Open Items to Confirm Before Kickoff — **only if** the partner chose to
+    proceed without answering something in Step 1A; otherwise omit
+
+**There is no "Assumptions" section, and the word "assumed" never appears
+in the SOW.** Anything unknown is asked before drafting (Step 1A); anything
+the partner chooses to leave open goes under Open Items, never mixed into
+Requirements or Dependencies.
+
+**Include only what's necessary.** Every line must come from the partner's
+input, a confirmed answer, or a dependency or risk this specific scope
+actually creates — no boilerplate (e.g. "third parties respond within
+standard SLAs"), no generic risks, no filler exclusions. If a section would
+only contain filler, keep it to one line or leave it out (except the
+always-present sections in Step 9). If you think something important is
+missing, ask the partner rather than adding it on your own.
+
+### Step 1A — Clarify Everything Before Drafting (no assumptions)
+
+Before drafting a single section, go through the input and list **every
+point you'd otherwise have to guess**. Ask them all in **one numbered round**
+(e.g. "Q1 … Q2 … — reply like '1: …, 2: …'"), each with a short reason and,
+where sensible, the options. Check at least:
+
+- **Scenario & business use case** — what problem is being solved, for
+  whom, and why now; what happens today (manual process, current tools).
+- **Applications** — exact product and edition/version (e.g. SAP Business
+  One cloud vs. on-premise), which system owns which data, and the direction
+  of each flow.
+- **Application availability** — check each app against the appse ai
+  catalog (`list_apps`). **An unavailable app never blocks the SOW.** Scope
+  it from the business logic, integration logic, and the partner's input,
+  and make connecting to that app an explicit part of the scope (see
+  "When an application isn't available in appse ai" below). Ask only what
+  genuinely changes that scope — e.g. whether the app has an API and
+  documentation — each with a recommended answer.
+- **Entities, events and volumes** — which records (orders, customers,
+  items…), what triggers each sync, how many per day and at peak.
+- **Customizations** — see Step 4; always ask.
+- **Constraints** — go-live date, compliance or data-residency needs,
+  environments available (test/production), existing integrations to
+  replace or coexist with.
+- **Success measures** — how the customer will judge the project a success.
+
+Rules:
+- **Don't draft until the answers are in.** If the partner answers only
+  some, say which are still open and ask again for those.
+- If the partner explicitly says to proceed without an answer, list that
+  point under **"Open Items to Confirm Before Kickoff"** — a visible open
+  item, never written as an assumption, never mixed into Requirements or
+  Dependencies, and never a firm deliverable.
+- Don't ask what the input already states clearly.
+
+**Ask like a senior pre-sales consultant — propose, then confirm.** Never
+hand the partner a blank checklist. Do the thinking first and let them
+confirm or adjust:
+
+- **Every question carries your recommended answer**, based on industry
+  standard practice for this kind of integration — so the partner can reply
+  "go ahead" and settle most points at once. Say briefly why you recommend
+  it.
+- **Sort the questions before asking:**
+  - **Must ask** — blocks an honest draft and has no safe default: **the
+    scope, whenever the input doesn't make it clear** (which processes,
+    records, directions, and systems are in and out — not just for broad
+    requests), application edition/deployment where it changes
+    scope, customizations, the go-live constraint, how an unavailable app
+    can be reached (API, documentation, access), and the **success
+    metrics** — how the customer will measure the project's success. Ask
+    these, each with a recommendation (for success metrics, suggest two or
+    three measurable ones that fit the scope, e.g. "orders in the ERP within
+    15 minutes", "zero duplicate records", "no manual re-keying").
+  - **Propose and confirm** — has a sensible industry default: data
+    ownership and flow direction, phasing, standard delivery conditions.
+    State your proposal; it stands unless the partner changes it.
+  - **Can wait** — useful but not needed to draft: header details (customer
+    name, reference), volumes, background on today's process. Don't ask
+    these up front; use a placeholder (e.g. `[Customer name]`) or list them
+    under Open Items to Confirm Before Kickoff.
+- **Aim for five questions or fewer**, ranked by impact. If there are more,
+  move the lower-impact ones into "propose and confirm" or "can wait" —
+  never drop a genuine must-ask just to hit the number.
+- **For a broad request** ("the entire B2B sales cycle", "full integration
+  between X and Y", "sync everything"), don't ask entity by entity. Propose a
+  **recommended scope table** from standard practice for that app pair —
+  each entity with in scope / later phase / out, flow direction, and which
+  system owns the master record — and ask the partner to confirm or edit it.
+  **Scope is never accepted by silence:** unlike "propose and confirm"
+  items, a proposed scope doesn't stand unless the partner changes it — wait
+  for them to confirm or edit it before drafting.
+  For example, for e-commerce ↔ ERP B2B: customers/companies, items,
+  inventory, and price lists flow ERP → store (ERP is master); orders flow
+  store → ERP; shipment status and invoices flow ERP → store; quotes and
+  returns in a later phase.
+- **For a programme-sized scope, propose phases** — e.g. Phase 1: master
+  data and orders; Phase 2: fulfilment and invoicing; Phase 3: quotes,
+  returns, and credits — each phase with its own deliverables, milestones,
+  and acceptance criteria in the SOW. Industry practice is to deliver the
+  highest-value, lowest-risk flows first.
+- **Include the hidden scope question a consultant would ask**, not just
+  the obvious ones — e.g. for custom fields: *who creates them in the
+  target system, and does that need development (e.g. an ERP extension)?*
+  That often changes scope and ownership more than the fields themselves.
+
+### Step 2 — Check the Digest's Readiness Signal
+
+If the Requirement Digest's readiness signal is **Needs a follow-up call**,
+do not draft a full SOW as if the signal weren't there. Say so plainly and
+ask whether to proceed anyway (e.g. as an early draft explicitly marked
+provisional) or wait for a follow-up call first. Do not silently upgrade a
+thin digest into a confident-sounding document.
+
+### Step 3 — Ground Deliverables in Real Capabilities (if `org_id` given)
+
+If cross-checking is wanted, confirm `org_id` fresh for this run — never
+reuse one from an earlier run or an earlier point in this conversation, even
+for the same partner or account.
+
+For each app/entity named in the digest's Apps Involved and Candidate
+Triggers/Actions fields, check `list_apps`/`list_operations` to cite the
+real, confirmed appse ai capability or connector involved, rather than
+generic language. If a lookup isn't available or doesn't resolve, write the
+deliverable in plain functional terms instead — never fabricate a named
+feature or connector to sound more specific than what's actually confirmed.
+
+#### When an application isn't available in appse ai
+
+Still write the full SOW. The business process and integration logic don't
+change because a connector doesn't exist yet — only how that one system is
+reached does. Scope it the way an integration specialist would:
+
+- **Describe the flows in business terms** exactly as for any other app
+  (what triggers, which records, which direction, which rules) — never
+  leave them out or water them down.
+- **Add an explicit deliverable for connecting to that app** — e.g.
+  "Connectivity to MedFlow WMS through its REST API: API assessment,
+  authentication setup, the endpoints needed for orders and shipment
+  confirmations, error handling and retries." Call it what it is (a custom
+  or API-based connection), never a standard connector.
+- **Put it early in the plan:** a technical assessment of the app's API at
+  the start of the Discovery & design phase, before the build commits to
+  it.
+- **Add its dependencies** under Dependencies — API
+  documentation, a test/sandbox instance, credentials, and the app vendor
+  or owner's availability.
+- **Add its real risks** under Risks & Mitigations — e.g. missing or
+  limited API capabilities (mitigation: the assessment happens before
+  build), rate limits, authentication changes.
+- **Reflect it in the indicative timeline** — connectivity work usually
+  lengthens Discovery and Build; say so rather than hiding it.
+- **Ask only what changes the scope**, with a recommendation — e.g. "Does
+  MedFlow have a REST API with documentation? (Recommended: confirm
+  before kickoff; the SOW includes an API assessment either way.)" If the
+  partner doesn't know, list it under Open Items to Confirm Before Kickoff
+  and still draft.
+
+### Step 4 — Draft Objectives
+
+One to three sentences on the business outcome, derived from the digest's
+Candidate Triggers/Actions and the pain implied by its Constraints —
+phrased as what changes for the customer, not as a feature list (that's
+Step 5).
+
+**Make every objective clear and measurable:** a specific outcome, the
+process it applies to, and how success is measured — e.g. *"Eliminate
+manual entry of Shopify orders into SAP Business One: every paid order
+appears in SAP as a sales order within 15 minutes, with no duplicates."*
+If the partner hasn't given a measure (time saved, error rate, processing
+time, volume handled), ask for it in Step 1A rather than inventing one.
+Avoid vague wording like "improve efficiency" or "streamline operations"
+without a measure.
+
+**Always ask about customizations** (in Step 1A), even if none are
+mentioned: *"Are any customizations needed — custom fields, business rules
+or transformations, special cases (e.g. B2B pricing, multi-warehouse),
+custom reports, or a connector for an app that isn't available?"*
+Agreed customizations become explicit deliverables; anything declined or
+not yet decided goes under Out of Scope ("Customizations beyond those listed
+above").
+
+### Step 5 — Draft Deliverables, Tagged by Confidence Source
+
+Each deliverable traces back to a **[Stated]** fact in the digest, or to an
+answer the partner confirmed in Step 1A. An **[Inferred]** fact is never a
+deliverable on its own — it's a Step 1A question first; once the partner
+confirms it, it becomes a deliverable. Do not let an unconfirmed detail slip
+into the committed section of the document. Write each deliverable
+specifically: what is built, between which systems, for which records, and
+the observable result.
+
+### Step 6 — Draft Dependencies (what the customer provides)
+
+This section lists what the customer must provide for **this** scope to be
+delivered — stated as their side of the work, not as assumptions: e.g.
+access to each application and a test environment before build starts, a
+named business owner for UAT sign-off within an agreed number of days,
+representative test data, master data in place before a dependent flow goes
+live, IT/security approvals needed for connectivity. Include a dependency
+only if this scope actually needs it — no boilerplate.
+
+**What never goes here:** unconfirmed facts about scope or systems (those
+are Step 1A questions, e.g. an application's edition or deployment), scope
+decisions (those go in Requirements & Deliverables once confirmed), and
+anything left open (those go in Open Items to Confirm Before Kickoff).
+
+### Step 7 — Draft Out of Scope (short)
+
+List only items the customer might **reasonably expect to be included** but
+aren't — e.g. a related process deferred to a later phase, migrating
+historical data, customizations beyond those agreed, support beyond the
+hypercare window. This protects both sides from scope creep, which is why
+industry-standard SOWs include it. Keep it short and specific to this
+scope; never pad it with generic items. A [Missing] point from the digest
+is a Step 1A question, not an automatic exclusion.
+
+### Step 8 — Draft Indicative Timeline
+
+A rough, non-committal range only — explicitly label it as indicative and
+state that detailed effort and team sizing come from the separate Effort
+and Team Estimator skill. Never present a specific date or a
+resource-backed estimate here; this step exists to give the customer a
+general sense of pace, not a commitment.
+
+### Step 8A — Draft the Delivery Plan (industry-standard, convincing)
+
+Write the plan the way an experienced integration delivery lead would —
+specific to this scope, confident, and in standard project language:
+
+- **Project Approach & Milestones** — the standard phases, each with its
+  output and a customer checkpoint:
+  1. *Discovery & design* — requirements confirmed, field mappings and
+     business rules signed off
+  2. *Build & configure* — workflows built on appse ai in a test
+     environment
+  3. *Testing* — system/integration testing by the partner, then user
+     acceptance testing (UAT) by the customer against the acceptance
+     criteria
+  4. *Deployment & go-live* — cut-over plan, production switch-on, first
+     live records verified
+  5. *Hypercare* — a defined post-go-live support window
+- **Acceptance Criteria** — one per deliverable, measurable and testable
+  (e.g. "10 test orders, including a new customer and a multi-line order,
+  appear in SAP with correct lines, prices, and no duplicates").
+- **Change Control** — changes to scope are raised in writing, assessed for
+  effort and timeline impact, and approved by both parties before work
+  starts.
+- **Risks & Mitigations** — the real risks for *this* scope, not a generic
+  list (e.g. master data not yet in the ERP → item sync before order sync;
+  API limits at peak volume → batch sizing and monitoring; customer
+  sign-off delays → agreed review windows).
+- **Support & Hypercare** — the length of the window, what's covered, and
+  how issues are raised; ongoing support beyond it is a separate agreement.
+
+Keep it convincing: lead with the customer's outcome, be specific (systems,
+records, volumes, measures), avoid hedging and filler, and never overstate
+— no guarantees the scope can't back up. Detailed effort and team sizing
+still come from the Effort and Team Estimator.
+
+### Step 9 — Assemble Into the Chosen Format
+
+Map Steps 4–8A's content into either the partner's own format (Step 0) or
+the generic fallback (Step 1). Named account, objectives with success
+metrics, requirements & deliverables, dependencies, out of scope (short),
+and indicative timeline must all be present and clearly labeled regardless
+of which format is used — these six are never optional, even inside a
+partner's custom template. The delivery plan
+(approach and milestones, acceptance criteria, change control, risks,
+support) is included too; if the partner's template has no place for part
+of it, add it as its own section rather than dropping it.
+
+### Step 10 — Present and Flag
+
+Present the assembled SOW. If Step 2 flagged a thin digest, repeat that
+flag here rather than only mentioning it once and letting it get lost. If
+any deliverable in Step 3 couldn't be grounded in a confirmed capability,
+say so plainly rather than presenting it with the same confidence as one
+that was.
+
+### Step 11 — Deliver the SOW as a Word or PDF File
+
+**The final output of this skill is always a file** — the chat version in
+Step 10 is the review draft, not the deliverable. After presenting it, ask
+only which format:
+
+> "I'll put this into a file for you to send to the customer. Which format?
+> 1. **Word (.docx)** — editable, best if you'll still make changes
+> 2. **PDF** — fixed layout, ready to send
+> 3. **Both**"
+
+If the partner already said which format earlier in the conversation, use
+that without asking again. Then:
+
+- **Build the file from the SOW exactly as approved in chat** — same
+  sections, order, and wording. Don't add, drop, or reword content while
+  converting. If the partner asks for changes, update the chat version
+  first, then regenerate the file.
+- **Use the right skill:** the `docx` skill for Word, the `pdf` skill for
+  PDF. For "both", build the Word file first and produce the PDF from the
+  same content so they match.
+- **Template:** if the partner supplied their own SOW template as a `.docx`
+  in Step 0, fill that document (keeping its styles, headers, logo) rather
+  than creating a new one. Otherwise follow
+  `references/generic-sow-template.md` exactly (section order, headings,
+  placeholder style) with a clean, neutral professional layout. Don't add
+  appse ai branding — this is the partner's document to their customer; use
+  their branding only if they provide it.
+- **Carry the flags into the file:** if the SOW is provisional (Step 2), put
+  a clear "PROVISIONAL DRAFT — pending follow-up call" line at the top of
+  the document; keep any Open Items to Confirm Before Kickoff clearly
+  marked, the "indicative" label on the timeline, and the Commercial Terms
+  placeholder.
+- **File name and location:** `SOW - {Account Name} - {YYYY-MM-DD}.docx` /
+  `.pdf`, saved in the current working directory unless the partner names
+  another folder. Never overwrite an existing file with the same name —
+  add a version suffix (`v2`, `v3`) instead.
+- **Report back** with the file path(s), and remind the partner to review
+  it before sending — especially any Open Items and the Commercial Terms
+  placeholder.
+
+The skill isn't finished until the file exists and its path has been
+reported.
+
+---
+
+## Allowed Tools
+
+### arise-mcp — read-only
+
+list_apps → Step 1A, to check each application is available in appse ai; Step 3, to cite real capabilities in Deliverables
+list_operations → used only in Step 3, to cite real capabilities in Deliverables
+
+No write tool is used by this skill. Never call `create_workflow`,
+`save_workflow`, or anything that modifies pricing, contracts, or the
+partner's org.
+
+### Local file output — Step 11 only
+
+`docx` skill → create the Word version of the approved SOW
+`pdf` skill → create the PDF version of the approved SOW
+
+Used on every run, in Step 11, once the partner has chosen the format. Writes go to
+the working directory (or a folder the partner names) — never overwrite an
+existing file.
+
+---
+
+## Known Limits (update as testing reveals more)
+
+- The generic fallback format (Step 1) is a reasonable industry-standard
+  structure, not validated against any specific appse ai house template —
+  if one exists, it should supersede this fallback entirely
+- Step 3's capability cross-check only covers apps/operations named in the
+  digest — it does not validate that a full end-to-end workflow using them
+  is actually buildable (that's `workflow-creator`'s job, not this skill's)
+- Not yet tested: a partner-supplied format significantly different in
+  structure from the generic fallback, a digest merged from three or more
+  calls, a SOW spanning more than one distinct integration/workflow
+
+---
+
+## Output Rules
+
+- **No assumptions.** Anything unclear about the scenario, business use
+  case, applications, or scope is asked in one numbered round (Step 1A)
+  before drafting.
+- **An unavailable application never blocks the SOW.** Scope its flows from
+  the business and integration logic and the partner's input, and add the
+  connection to that app as an explicit deliverable, with its API
+  assessment, dependencies, risks, and timeline impact (Step 3).
+  Never fill a gap with a guess or park it as an assumption; if the partner
+  says to proceed without an answer, list it under "Open Items to Confirm
+  Before Kickoff". The SOW has no Assumptions section and never says
+  "assumed"
+- **Only what's necessary** — every line comes from the partner's input, a
+  confirmed answer, or a dependency or risk this scope actually creates; no
+  boilerplate or filler. If something seems missing, ask
+- **Propose, then confirm — never a blank checklist.** Every question has a
+  recommended answer from industry practice; five must-ask questions or
+  fewer, ranked by impact; header details, volumes, and background can wait.
+  For broad scopes, offer a recommended scope table (entity, in/later/out,
+  direction, master system) and phases for the partner to confirm or edit
+- **Objectives are clear and measurable**, and customizations are always
+  asked about — agreed ones become deliverables, the rest are excluded
+- **The plan is industry-standard and convincing:** phased approach and
+  milestones, measurable acceptance criteria, change control, real risks
+  with mitigations, and a hypercare window — specific, confident, never
+  overstated
+- A Discovery Summary is recommended, not required — if the partner gives
+  raw material, offer once to create one; if they'd rather draft directly,
+  draft from the material, turning anything you'd have to infer into Step
+  1A questions. Never invent requirements from a one-line request
+- If the request is to build a workflow rather than write a SOW, ask which
+  they want — don't treat a workflow scenario as SOW input
+- Refer to the input as the "Discovery Summary" when talking to the
+  partner, not "Requirement Digest"
+- Always ask for the partner's own SOW format before drafting anything —
+  every time, not just once per partner
+- Fall back to the generic format only when no partner format is given
+- Never draft pricing or commercial terms — reference them as a
+  placeholder only
+- Never let an [Inferred] fact from the digest appear as a firm deliverable
+  — ask the partner to confirm it first (Step 1A). Dependencies hold only
+  what the customer must provide for this scope (access, environments,
+  data, sign-off), never guesses about scope
+- Never silently proceed on a digest whose readiness signal is "Needs a
+  follow-up call" — flag it and get explicit confirmation to proceed anyway
+- Never fabricate a named appse ai capability or connector to make
+  Deliverables sound more specific than what's actually confirmed
+- Named account, objectives with success metrics, requirements &
+  deliverables, dependencies, a short out-of-scope list, and indicative
+  timeline are always present, regardless of format
+- Indicative Timeline is always labeled as indicative, never presented as a
+  committed date or resourced estimate
+- The final output is always a file — ask only Word, PDF, or both, then
+  build it from the SOW as approved in chat, carrying the provisional flag,
+  any Open Items, and the Commercial Terms placeholder into it. The run
+  isn't complete until the file path is reported
+- On being asked to stop, stop immediately and report exactly what has and
+  hasn't been drafted so far
