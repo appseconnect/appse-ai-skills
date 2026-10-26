@@ -1,0 +1,379 @@
+# workflow-creator — Reference Patterns
+
+Real, working workflow JSON exported from appse ai, used to teach this skill
+envelope shapes beyond the simple one-trigger/one-action case. Each file is
+real data, unmodified unless its section below lists a correction — do not
+edit field values, only read structure from them (same rule as the original
+single reference workflow).
+
+## pattern-dedupe-skip-return-request.md
+
+**Demonstrates:** dedupe via search-before-write, skip silently if found.
+Trigger (WooCommerce order cancelled) → search SAP for an existing return
+request (stable key: `U_WEBORDID`) → `FilterNode` → `DecisionNode` on
+`DocEntry exist` → **only the `false` branch has an outgoing edge** (create).
+The `true` branch (already exists) is a dead end — no action taken.
+**Status: approved reference for dedupe-and-skip.**
+
+## pattern-dedupe-create-or-update-customer.md
+
+**Demonstrates:** the real create-vs-update pattern. Trigger (D365 BC
+customer created) → search Magento2 by email → `DecisionNode` "Customers
+exist" → **both branches wired**: `false` → `Create a customer`, `true` →
+`Update a customer` (with a `customerId` pulled from the search result).
+**Status: approved reference for create-vs-update.**
+
+## pattern-dedupe-create-or-update-businesspartner-subrecords.md
+
+**Demonstrates:** a second, independent confirmation of create-vs-update —
+Trigger (Shopify customer updated) → search SAP B1 by email →
+`DecisionNode` → `false` → `create_businesspartner`, `true` →
+`update_businesspartner`. Different app pair from the customer example
+above, same confirmed shape — strengthens confidence this pattern
+generalizes rather than being a one-off.
+
+**Additional detail this file reveals that the customer example didn't:**
+when the update touches a nested array field (`BPAddresses`), the update
+payload references the _original_ record's row identifier —
+`{{$payload.BPAddresses[idx].RowNum}}`, pulled from the search result — to
+correctly target the existing sub-record. Without this, an update could
+silently create a duplicate address entry instead of updating the existing
+one. This is API-specific behavior (SAP B1 treats addresses as a row-
+identified sub-collection; Magento2's `update_customer` in the other example
+just replaces the whole array by `customerId`, no row IDs needed) — **when
+building an update that touches a nested array, check whether the target
+API needs this row-preservation pattern rather than assuming Magento2's
+simpler replace-the-array behavior is universal.**
+**Status: approved reference for create-vs-update; use this file
+specifically when nested/sub-record fields are involved.**
+
+## pattern-dedupe-create-or-update-product.md
+
+**Demonstrates:** create-or-update for **products**, in the usual direction —
+ERP is the product master, pushing to the store. Trigger (D365 BC items
+updated) → Magento2 `Get product by SKU` (`sku: {{$payload.number}}`,
+`always_output_data: true`) → `DecisionNode` "SKU exists in Magento"
+(`$payload.sku` **equal** `$('Dynamics 365 Business Central').payload.number`)
+→ `true` → `Update a product` (SKU in the URL field `sku`, fields in a
+`product` object), `false` → `Create a product` (everything inside
+`product`).
+
+**What it confirms:**
+
+- The lookup straight after the trigger reads `$payload` (same as every
+  other reference).
+- Create/update nodes after a lookup + Decision read source fields from the
+  trigger **by its `current_name`** (`$('Dynamics 365 Business Central')`) —
+  with **no Filter in between**. Consistent with the other working
+  references; it does not tell us what happens when a Filter sits in the
+  path.
+- Magento2 wraps product fields in a `product` object; update takes the SKU
+  outside it.
+
+**Values not to copy blindly:**
+
+- `type_id: "simple"`, `status: "1"` (enabled), `visibility: "4"` (catalog
+  and search) are standard Magento codes — reasonable defaults, but still
+  list them under "Mappings I worked out" in Step 9.
+- `attribute_set_id: "4"` is Magento's default attribute set, but many
+  stores use their own — treat it as a **company-specific setting** (ask).
+
+**Gaps an expert build should close (not edited here — this is the export
+as supplied):**
+
+- No guard for an empty item number before the lookup, and the Decision
+  only checks `equal` — add the not-empty checks per "Think Like an
+  Integration Expert".
+- The update re-sends `status: "1"` and `visibility: "4"`, which would
+  re-enable a product someone deliberately disabled in Magento. On updates,
+  leave out fields the store team manages unless the partner wants them
+  synced.
+- Trigger is "Items **updated**" with a start date of 2026-02-19 — confirm
+  it also fires for newly created items, and start new builds from now.
+
+**Status: reference for create-or-update of products (ERP → e-commerce).**
+Supplied 2026-09-24; tested status not stated — confirm with the team.
+
+## pattern-find-or-create-customer-then-order.md
+
+**Demonstrates:** find-or-create a parent record, then create a child record
+that depends on it. Trigger (Shopify new order) → search D365 BC customer by
+email → `DecisionNode` on customer `number exist` → **both branches end in
+the same child action (create sales order), but get the customer number
+differently:**
+
+- `true` (customer exists) → `Create a new sales order`, with
+  `customerNumber` taken from the **search result**
+  (`$('<search node>').payload.number`)
+- `false` (customer missing) → `Create a new customer` → **then, in
+  sequence,** `Create a new sales order`, with `customerNumber` set to the
+  same value the new customer was just created with
+
+Use when the child record (order, invoice, shipment) cannot be created
+without a parent (customer, business partner) that may not exist yet. This
+differs from create-or-update: the "found" branch does not update the
+parent, it just reuses it.
+
+**No guard on a blank source email — the same failure class as a blank
+search key returning every record. Expert review must add a Filter before
+the customer search.**
+
+**Corrected from the original export (2026-09-24), not unmodified:**
+
+- The `true`-branch order line's `unitPrice` pointed at the order-level
+  `currentSubtotalPriceSet` (the whole order's subtotal) instead of the
+  per-line `lineItems.nodes[].originalUnitPriceSet` used on the `false`
+  branch. That would have priced every line at the full order subtotal for
+  returning customers. Corrected to match the `false` branch.
+- The final edge (create customer → create sales order) was missing
+  `"targetHandle": "default"`; added for consistency with every other edge.
+
+**Not confirmed by this file:** whether `salesOrderLines` with a single
+object using `nodes[]` projections expands to one line per Shopify line
+item at runtime, or needs a `SplitterNode`. Confirm before relying on it
+for multi-line orders.
+**Status: reference for find-or-create-then-create-child.** The app-specific
+mappings (Shopify GID stripping via `substringAfter`, `type: "Person"`) are
+field values — never copy them; resolve them fresh per Steps 6–7.
+
+## pattern-sku-reconciliation-and-multibranch-order.md
+
+**Demonstrates:** three things in one workflow —
+
+1. SKU/item reconciliation: `SplitterNode` (fans out order line items) →
+   `Get Item by ItemCode` → `FilterNode` (item exists) → `Create New Items`.
+   **Approved reference for SKU/item reconciliation** — for the *shape* only.
+   **Don't copy its `$('Splitter')` references** in the Filter and Create
+   nodes: they read the Splitter from past a Filter. When a Filter sits in
+   between, read the element from the **last Filter** (e.g.
+   `$('Has SKU').payload.sku`) — live builds got `null` by copying this.
+2. Single-criterion entity resolution (email only) for Business Partner —
+   dedupe-and-skip style, not a fallback cascade. Still no confirmed example
+   of a true email→phone→name cascade.
+3. **An AI node (`get_chat_completions`, GPT-4.1) used mid-workflow** for
+   order-total reconciliation, feeding a `JsonConverterNode`, feeding an
+   `Update SalesOrder` call. Real and working, but **not something the
+   partner originally asked for — do not treat this as an approved pattern
+   for the skill to build until confirmed with the senior.** Kept in this
+   file only because it's real data; the skill should not replicate the
+   AI-node portion of this shape without explicit sign-off.
+
+## pattern-parallel-branch-inventory-notification.md
+
+**Demonstrates:** independent parallel branches off a single trigger (not
+sequential) — one branch updates inventory directly on a stable key, a
+second, separate `DecisionNode` (dual condition: exists AND value = 0)
+triggers a Microsoft Teams notification. Useful reference for "notify on a
+business condition" as a distinct action type, and for multiple independent
+branches fanning out from one trigger node.
+**Status: approved reference for parallel branching + notification actions.**
+
+## Node and edge envelope (common to every file above)
+
+Use this when composing a custom flow (SKILL.md Building Blocks) — every
+reference file follows it.
+
+**Flow:** `{ "nodes": [...], "edges": [...], "viewport": {x, y, zoom} }`
+
+**Every node:** `id` (a real UUID — e.g. `9dd780ab-674b-42ca-8b9b-b37db2d1c27c`,
+**not** a readable slug like `trigger_1` or `sap_lookup`), `type`, `data`,
+`position: {x, y}`, `measured: {width, height}` — app nodes 240×120,
+Decision/Filter nodes 136×120. Lay nodes out left→right (x += ~370 per
+step; parallel/branch nodes offset on y, e.g. ±65) so the canvas is readable.
+**Confirmed failure:** a build used slug-style node IDs — every node still
+executed individually and the flow still produced output, but the platform
+never wrote an execution-history record for the run at all (confirmed by
+comparing against builds with real UUIDs, which did). A slug is a "unique
+string" in the loosest sense, but it isn't what the platform's execution
+tracking expects — generate a real UUID for every node, always.
+
+**Every expression value needs a leading `=` before the `{{`** —
+`"EmailAddress": "={{ $payload.defaultEmailAddress.emailAddress }}"`, never
+`"EmailAddress": "{{ $payload.defaultEmailAddress.emailAddress }}"`. This is
+the platform's actual signal for "evaluate this as an expression" — it's
+what the node editor's Parameters panel shows as the `f` (expression) vs.
+`T` (text) toggle. **Confirmed failure:** an entire build — every Filter,
+Decision, and mapped field — was written without the leading `=`. It saved
+without any error, but every field was stored as literal text and the
+workflow failed completely. Check every field has it, not just the ones
+that look unusual — this breaks the whole workflow at once, not one field.
+
+**`data` on `AppTriggerNode`:** `app` (the app's catalog details: `code`,
+`display_name`, `icon`, `doc_url`, `category`, `has_actions`,
+`has_triggers`, `has_tools`, `description`), `idx` (1), `cron`
+(e.g. `"*/3 * * * *"`), `settings` (`on_error`, `execute_once`,
+`retry_on_fail`, `always_output_data`), `properties` (`limit`,
+`since_from`), `action_code`, `action_name`, `current_name`,
+`original_name`, `next_data_from_template`
+(`={{date_max_by($payload[*],&<timestamp field>) }}`), `credential_id`.
+
+**`data` on `AppNode`:** same as the trigger minus `cron` and
+`next_data_from_template`; `idx` increments per node; `properties` holds
+the field mappings. A search node feeding a Decision usually sets
+`settings.always_output_data: true`, so the "not found" branch still runs.
+
+**`data` on `DecisionNode` / `FilterNode`:** `idx`, `settings`
+(`disable_case_sensitivity: false`), `properties.advance_filter`,
+`current_name`, `original_name` (`"Decision"` / `"Filter"`). No `app`, no
+`credential_id`.
+
+**`current_name` matters:** later nodes reference earlier ones as
+`$('<current_name>')`, so give each node a clear, unique name and use that
+exact string in expressions. **Never copy a node name from a reference
+file** — `$('Splitter')`, `$('Shopify')`, `$('SAP Business One 2')` are
+those workflows' names. Use the names _you_ gave the nodes in this
+workflow (a live build broke by referencing `'Splitter'` when its
+Splitter was named "Split Variants").
+
+**Which node to reference (what the real files show):**
+
+- The node right after the trigger — or right after a Filter — reads the
+  record with **`$payload.…`**. Every reference file's first lookup does
+  this (e.g. `email: {{$payload.customer.email}}`).
+- Nodes _after a lookup + Decision_ (the create/update actions) read
+  source-record fields from the trigger by name (`$('Shopify').payload.…`)
+  in two working reference files — that's confirmed.
+- **Not confirmed, and failed once:** a lookup placed after a Filter that
+  read the trigger by name instead of `$payload` (seen in a live build).
+  Its field Preview was blank and the search returned every customer. So:
+  whatever sits directly after a Filter uses `$payload`. When a Filter sits
+  between the trigger and later nodes, prefer referencing the Filter node
+  by name for source fields — it carries only the records that passed —
+  and check the field Preview isn't blank.
+
+**Every edge:** `id`, `source`, `target`, `sourceHandle`, `targetHandle`
+(`"default"`). `sourceHandle` is `"default"`, except out of a
+`DecisionNode`, where it's `"true"` or `"false"`.
+
+**Branch execution order (confirmed by the platform team, 2026-09-25):**
+branches leaving the same node run **sequentially, not in parallel** — the
+branch whose nodes were added first runs first and completes before the
+next begins. In saved JSON, "added first" = earlier in the `nodes` array,
+with lower `idx`. To make one branch run before another (e.g. item
+creation before order creation off the same trigger), give its nodes the
+earlier positions and lower `idx`, and list its edge first. Example shape:
+trigger (idx 1) → item branch (idx 2–6: Splitter → Has SKU → Find Item →
+Item Not In SAP → Create Item) → order branch (idx 7+: Has Email → Find
+Order → … → Create Sales Order). If a node in the first branch fails with
+`on_error: stop`, the run stops before the second branch starts.
+
+## Condition operators seen in real workflows
+
+Inside `advance_filter`, conditions in the same inner list are **AND**ed
+(confirmed: parallel-branch reference). Operators seen:
+
+- `basic` / `exist` — field exists (`rightValue: ""`)
+- `basic` / `is_not_empty` — field exists **and isn't blank**
+  (`rightValue: ""`); seen set in the portal UI on a live build. Prefer
+  this over `exist` for guarding match keys.
+- `string` / `equal`, `string` / `not_equal`
+- `number` / `equal`
+
+## Node types now confirmed (previously only AppTriggerNode/AppNode seen)
+
+- `DecisionNode` — `true`/`false` output handles, `advance_filter` condition
+  array: `[[{operator: {type, operation}, leftValue, rightValue}, ...]]`.
+  Can combine multiple conditions in one filter (AND logic, confirmed in
+  the parallel-branch inventory example's dual-condition Decision).
+- `FilterNode` — same `advance_filter` shape as DecisionNode, but a single
+  `default` output; only matching records pass through. Used for dedupe-
+  and-skip, not branching (no true/false split).
+- `SplitterNode` — fans out a **nested list inside each record** for
+  per-element processing. The one real example
+  (`pattern-sku-reconciliation-and-multibranch-order.md`): trigger (new
+  orders) → Splitter (`properties: {}`) → `Get Item by ItemCode` reading the
+  element with `$payload.sku` → Filter → `Create New Items`, where later
+  nodes read the element as `$('Splitter').payload.<field>`. Note the
+  reference uses `'Splitter'` (the node's original name) even though its
+  `current_name` is "Splitting the Items" — which name the platform resolves
+  isn't confirmed; check the field Preview.
+  **Config (seen in a live build):** set on `data` directly, not in
+  `properties` — `"fields_to_split": "variants.nodes"` (path to the list
+  inside each record) and `"include": "no_other_fields"` (only the element's
+  own fields continue; the parent's fields, e.g. product title, are not
+  carried along — read those from an earlier node if needed). The older
+  reference file saved it with empty `properties` and no visible config.
+  **Not needed** for top-level trigger records (each customer / order) —
+  the platform already runs each record through the flow one at a time;
+  confirmed by live run metrics and every reference file.
+- `JsonConverterNode` — parses a JSON string field (e.g. an AI node's raw
+  text output) into structured data for downstream nodes. Configured via a
+  `fieldsToConvert` expression pointing at the field to parse.
+
+## Expression functions confirmed in these files
+
+Used by SKILL.md Step 6 (rung 2) to derive values for mandatory fields.
+Only these are confirmed working in real workflows — for any other function,
+check `docs/platform/key_concepts/expressions_mapping/` first; never invent
+a function name.
+
+| Function                        | What it does                                                                                        | Seen as                                                                      |
+| ------------------------------- | --------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `substringAfter(text, marker)`  | Text after a marker — e.g. strip a Shopify GID to its numeric ID                                    | `substringAfter($('Shopify').payload.customer.id,'gid://shopify/Customer/')` |
+| `substringBefore(text, marker)` | Text before a marker — e.g. date part of an ISO timestamp                                           | `substringBefore($('Shopify').payload.createdAt,'T')`                        |
+| `split(text, sep)[n]`           | Split and take the nth part — e.g. first/last name from a display name, or the ID segment of a GID  | `split($payload.id,'/')[4]`, `split(...displayName,' ')[0]`                  |
+| `to_number(value)`              | Convert text to a number — **required for numeric target fields** (prices, quantities, price-list numbers) when the source sends text; documented in appse-ai-docs `expressions_mapping` | `to_number($('Has SKU').payload.price)`, `to_number('1')` |
+| `date_max_by(array, &field)`    | Latest date in an array — trigger watermark only (`next_data_from_template`), not for field mapping | `date_max_by($payload[*],&updatedAt)`                                        |
+
+Joining values needs no function — two expressions side by side in one
+field concatenate (e.g. `{{...firstName}} {{...lastName}}`, confirmed in
+the live reference workflow and in the portal).
+
+**Nested required fields the live operation detail doesn't show:**
+| Operation | Array / object | Sub-fields the portal requires | How to fill them |
+|---|---|---|---|
+| SAP B1 `create_item` | `ItemPrices[]` | `PriceList`, `Price`, `Currency` | `Price` from the source price. **`PriceList` and `Currency` are company-specific — ask the partner** (no SAP B1 action returns local currency or price lists; checked 2026-09-24). The SKU reference's `"1"` / `"$$"` were that customer's values — never copy them. **Types (from the documented SAP B1 "Items Updated" record):** `PriceList` integer, `Price` number, `Currency` a currency *code* as defined in SAP (the example uses `"$"`) — send numbers via `to_number()`. **Confirmed cause of a live "BadRequest request body data is invalid": `Currency: "USD"` — that SAP company's dollar code was `"$"`.** (Numbers were switched to `to_number()` at the same time; whether text values alone would fail is untested.) |
+| D365 BC `create_salesorder` | `salesOrderLines[]` | `lineType`, `quantity`, `unitPrice`, `lineObjectNumber` | `lineType: "Item"` (standard), others from the order lines (find-or-create reference) |
+
+Add rows as new ones are found. Anything company-specific (currency, price
+list, warehouse, tax code, posting group) follows SKILL.md's rule: source
+field → run-time lookup action → ask the partner. Never a reference's value.
+
+**Target field limits (check every built value against these):**
+
+These apply per app — the check itself (length, format, allowed values,
+uniqueness, fields required together) applies to **every** target app; see
+SKILL.md Step 6. The rows below are the limits known so far; for any app or
+field not listed, look for the limit in that app's docs or operation detail,
+and state it as an assumption if it can't be found.
+
+| App / field | Limit | Notes |
+|---|---|---|
+| **Dynamics 365 Business Central** customer/item `number` | 20 characters | BC record numbers are Code[20] — upper-cased by BC |
+| Dynamics 365 BC `displayName` | 100 characters | |
+| Dynamics 365 BC `email` | 80 characters | |
+| Dynamics 365 BC `phoneNumber` | 30 characters | |
+| **Magento 2** product `sku` | 64 characters | Longer SKUs from an ERP are rejected |
+| **Shopify** product `title` | 255 characters | |
+| SAP B1 `CardCode` (business partner) | 15 characters | `SHOP-` + 13-digit Shopify ID = 18 → rejected. `C` + ID = 14 fits; or use `create_businesspartner_autocardcode` (SAP numbering) and read the code from that node's output |
+| SAP B1 `ItemCode` | 50 characters | Older SAP versions: 20 — confirm the version if SKUs are long |
+| SAP B1 `CardName` | 100 characters | First + last name normally fits |
+| SAP B1 `NumAtCard` (customer reference) | 100 characters | Shopify order name/number fits |
+| SAP B1 `Phone1` | 20 characters | Shopify phone numbers with `+` and spaces can exceed — leave out or trim |
+| SAP B1 `BPAddresses[].AddressName` | 50 characters | Must also be unique per address type on the business partner |
+| Shopify numeric IDs (GID suffix) | ~13–14 digits today | Can grow — leave headroom when prefixing |
+
+These are the apps' standard limits; confirm against the customer's
+version when a value is close to a limit (customisations and versions can
+differ). Add rows for any app as new limits are found.
+
+**Common mandatory-field patterns (approach, not literal values):**
+
+- **Target record number/code required, source has a GID** → derive the
+  numeric ID with `substringAfter` (or `split(...,'/')[4]`).
+- **Single name field required, source has first + last** → join them.
+- **Date required, source has a timestamp** → `substringBefore(...,'T')`.
+- **Parent key required on a child record** → take it from the lookup
+  node's result (`$('<search node>').payload.<key>`) on the "found" branch,
+  or reuse the same derived value the parent was just created with on the
+  "not found" branch (see `pattern-find-or-create-customer-then-order.md`).
+
+## Still not confirmed by any reference file
+
+- Email→phone→name fallback cascade for entity resolution (multiple
+  chained Decision nodes trying successive match criteria).
+- Approval/validation gates in the sense originally described (a lookup
+  feeding a Decision node for a business rule like credit/pricing) — the
+  AI-node pattern above is adjacent but distinct, and unapproved for now.
+- A static operation-lookup index (business step → specific app/operation),
+  proposed once but deliberately deferred — see SKILL.md Known Limits.

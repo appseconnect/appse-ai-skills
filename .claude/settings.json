@@ -1,0 +1,32 @@
+{
+  "enabledMcpjsonServers": [
+    "context7"
+  ],
+  "permissions": {
+    "allow": [
+      "mcp__claude_ai_arise-mcp__list_organizations",
+      "mcp__claude_ai_arise-mcp__list_apps",
+      "mcp__claude_ai_arise-mcp__list_credentials",
+      "mcp__claude_ai_arise-mcp__list_operations",
+      "mcp__claude_ai_arise-mcp__get_operation_detail",
+      "mcp__claude_ai_arise-mcp__list_workflows",
+      "mcp__claude_ai_arise-mcp__get_workflow",
+      "mcp__claude_ai_arise-mcp__save_workflow",
+      "mcp__claude_ai_arise-mcp__get_node_data",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "mcp__claude_ai_Context7__resolve-library-id",
+      "mcp__claude_ai_Context7__query-docs",
+      "Read(./skills/workflow-creator/**)",
+      "Read(./.claude/skills/workflow-creator/**)",
+      "Read(./skills/sow-generator/**)",
+      "Read(./.claude/skills/sow-generator/**)",
+      "Read(./skills/requirement-digest/**)",
+      "Read(./.claude/skills/requirement-digest/**)",
+      "Read(./skills/cross-app-scenario-advisor/**)",
+      "Read(./.claude/skills/cross-app-scenario-advisor/**)",
+      "Read(./skills/workflow-documenter/**)",
+      "Read(./.claude/skills/workflow-documenter/**)"
+    ]
+  }
+}
