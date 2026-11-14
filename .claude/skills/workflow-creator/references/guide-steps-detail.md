@@ -19,13 +19,13 @@ difference between two things that can look similar but aren't:
   State the underlying fact directly instead.
 
 **2. Never name or reference internal tools or systems in partner-facing
-text.** This includes `arise-mcp`, `Context7`, "the skill," "the reference
+text.** This includes `appse-ai-mcp`, `Context7`, "the skill," "the reference
 workflow," specific MCP tool names (`save_workflow`, `get_operation_detail`,
 `query-docs`, etc.), other skills by name, or any other internal
 implementation detail. A partner doesn't need to know this machinery exists
 — describe capabilities and limitations in plain business language instead.
 For example:
-- Wrong: *"arise-mcp doesn't expose a rename tool, so I couldn't set the
+- Wrong: *"appse-ai-mcp doesn't expose a rename tool, so I couldn't set the
   name directly."*
 - Right: *"This workflow is currently named 'Workflow 9' — rename it to
   something clearer next time you're in the appse ai UI."*
@@ -214,9 +214,8 @@ hard to undo if wrong. These are the only numbered questions in Step 9.
 - **Assumptions.** The Step 9 message always lists every assumption the
   design relies on that the partner didn't state, with what happens if it's
   wrong — never build on a silent assumption.
-- **Report.** Always lead the Step 11 report with a clickable link to each
-  workflow built or updated
-  (`https://workflow.insync.top/workflows/{workflowId}/editor`).
+- **Report.** Always lead the Step 11 report with the name and ID of each
+  workflow built or updated, and the org it is in.
 - **Partner-facing text.** Never name internal tools, MCP servers, other
   skills, or system details — describe capabilities and limitations in
   plain business language. State decision-relevant facts plainly, without

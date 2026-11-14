@@ -58,10 +58,11 @@
   left.
 - **No tool exposes the `save_workflow` envelope schema.** The JSON shape
   is learned from local reference files and `conventions.md` only.
-- **Workflow link base URL is hardcoded** to `https://workflow.insync.top`
-  (the test environment); tools only return relative links. Confirm the
-  production portal URL before partners use this, and update Step 11 — or
-  make it configurable per environment.
+- **No editor link in reports.** The skills no longer hardcode a portal host;
+  Step 11 (and workflow-documenter) report the workflow name, ID and org
+  instead. The read-only calls checked (`list_organizations`,
+  `list_workflows`, `get_workflow`) return no editor URL or base host. Add the
+  link back only if the platform returns one.
 - **`get_operation_detail` can return only shallow required-field info** for
   object/array parameters, without their inner shape (confirmed: SAP B1
   `Create New Business Partner`, Shopify
@@ -176,7 +177,7 @@
   fixed "medium" could cap reasoning on complex builds where the expert
   review needs it.
 - **Tool-approval prompts:** the project `settings.json` pre-approves all
-  read-only arise-mcp and Context7 tools, plus `save_workflow` (it follows
+  read-only appse-ai-mcp and Context7 tools, plus `save_workflow` (it follows
   straight on from a create the partner already approved in Step 9).
   `create_workflow` still prompts individually, since each create uses a
   workflow from the partner's allocation. This cut approval prompts from

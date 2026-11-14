@@ -4,7 +4,7 @@ description: >
   Produces clear documentation for an appse ai workflow — a business
   overview the partner can share with their customer, plus a technical
   reference for the partner's own team — by reading the actual saved
-  workflow via arise-mcp. Use when a partner asks to "document this
+  workflow via appse-ai-mcp. Use when a partner asks to "document this
   workflow", "write documentation for workflow {id/name}", "create a
   handover document", "explain what this workflow does", or right after
   workflow-creator has built a workflow. Takes the workflow from the
@@ -208,9 +208,8 @@ what and suggest updating the workflow (e.g. with workflow-creator).
 9. **Support** — `[Support contact]` unless the partner provides one.
 
 **Part B — Technical Reference (for the partner's team)**
-1. **Workflow details** — name, ID, link
-   (`https://workflow.insync.top/workflows/{workflowId}/editor`), status
-   (active/inactive), last run status if available.
+1. **Workflow details** — name, ID, org, status (active/inactive), last run
+   status if available.
 2. **Trigger** — app, event, schedule (cron and plain), start date, batch
    size.
 3. **Flow outline** — the steps as a simple text diagram (e.g.
@@ -265,7 +264,7 @@ tell from the conversation.
 
 ## Allowed Tools
 
-### arise-mcp — read-only
+### appse-ai-mcp — read-only
 ```
 list_organizations   → resolve the org (Step 0)
 list_workflows       → resolve a workflow name to its ID (Step 0)
@@ -291,9 +290,6 @@ working directory (or a folder the partner names); never overwrite.
 
 ## Known Limits (update as testing reveals more)
 
-- The workflow link base URL is the test environment
-  (`workflow.insync.top`) — same open item as workflow-creator; confirm the
-  production URL before partners use this.
 - Node types without a confirmed description (e.g. agent/AI nodes, XML or
   Base64 converters) are documented from the docs if available, otherwise
   shown as "(step type not described)" in Part B.

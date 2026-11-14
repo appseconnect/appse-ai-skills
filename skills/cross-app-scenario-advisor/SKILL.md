@@ -3,7 +3,7 @@ name: cross-app-scenario-advisor
 description: >
   Gives a partner a capability brief on named apps — real integration
   scenarios, what triggers/actions each app actually supports in appse ai,
-  and known quirks or limits — via arise-mcp app-catalog cross-checks. Use
+  and known quirks or limits — via appse-ai-mcp app-catalog cross-checks. Use
   when a partner asks "what can I do with {app A} and {app B}", "what does
   {app} support", "what's possible between these apps", or wants to
   understand a system outside their core expertise (e.g. a SAP partner
@@ -39,7 +39,7 @@ customer name.
 
 ---
 
-## Tool Reference (arise-mcp, read-only)
+## Tool Reference (appse-ai-mcp, read-only)
 
 `list_apps` — confirm each named app exists in the org's catalog, and its
 real `code`(s); some apps have more than one catalog entry (e.g. an
@@ -214,7 +214,7 @@ reported (or the one-line reason it was skipped).
 
 ## Allowed Tools
 
-### arise-mcp — read-only
+### appse-ai-mcp — read-only
 
 list_apps → Step 1, to confirm each named app and its real code(s)
 list_operations → Step 2, to enumerate real triggers/actions per app

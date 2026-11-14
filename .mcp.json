@@ -12,6 +12,10 @@
       "env": {
         "CONTEXT7_API_KEY": "${CONTEXT7_API_KEY}"
       }
+    },
+    "appse-ai-mcp": {
+      "type": "http",
+      "url": "https://mcp.appse.ai/mcp"
     }
   }
 }

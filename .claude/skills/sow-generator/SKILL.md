@@ -4,7 +4,7 @@ description: >
   Turns a Requirement Digest into a formal Scope of Work — named account,
   objectives, requirements, dependencies, out-of-scope items, indicative
   timeline —
-  via arise-mcp app-catalog cross-checks. Use when a partner has a completed
+  via appse-ai-mcp app-catalog cross-checks. Use when a partner has a completed
   Requirement Digest and needs it turned into a customer-facing SOW, or asks
   to "draft a SOW," "write the scope of work," or "turn this digest into a
   proposal document." Always asks for the partner's own SOW format first;
@@ -49,7 +49,7 @@ the SOW has no way to tell the difference unless the document tells them.
 
 ---
 
-## Tool Reference (arise-mcp, read-only)
+## Tool Reference (appse-ai-mcp, read-only)
 
 Optional, used only in Step 3: `list_apps` and `list_operations`, to name
 real appse ai capabilities in the Deliverables section (e.g. citing the
@@ -502,7 +502,7 @@ reported.
 
 ## Allowed Tools
 
-### arise-mcp — read-only
+### appse-ai-mcp — read-only
 
 list_apps → Step 1A, to check each application is available in appse ai; Step 3, to cite real capabilities in Deliverables
 list_operations → used only in Step 3, to cite real capabilities in Deliverables

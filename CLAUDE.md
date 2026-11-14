@@ -47,7 +47,7 @@ skills/                  (the plugin-packaged skills — the real distributable,
   workflow-documenter/         (reviewed)
 docs/
   workflow-creator-known-limits.md   (maintainer notes — internal, never packaged with the skill)
-.mcp.json                (project-scoped MCP servers — Context7, for local dev)
+.mcp.json                (project-scoped MCP servers — Context7 and appse-ai-mcp)
 .gitignore               (.claude/settings.local.json, *.zip, *.plugin)
 CLAUDE.md
 README.md
@@ -76,13 +76,14 @@ incident details that aren't partner-facing.
 - **Claude** reasons and follows Skill instructions; has no direct platform access on
   its own.
 - **Skill** (`SKILL.md` + `references/`) is the instruction layer.
-- **arise-mcp** is appse ai's MCP server — the only component with real read/write
-  access to the platform. Connected as a `claude.ai` connector (not via `.mcp.json`),
-  15 tools. Its login is per-organization — see Org switching below.
+- **appse-ai-mcp** is appse ai's MCP server — the only component with real read/write
+  access to the platform. Connected through `.mcp.json` as the `appse-ai-mcp` server
+  (`https://mcp.appse.ai/mcp`, sign-in via `/mcp`; shows 14 tools there, the connector
+  shows 15). It is also available as a `claude.ai` connector. Its login is per-organization — see Org switching below.
 - **Context7** gives read-only access to appse ai's official docs,
   `/appseconnect/appse-ai-docs` (app fields and example records, expression syntax,
   node pages). The skill calls `query-docs` directly with that library ID —
-  `resolve-library-id` is no longer used. Separate access grant from arise-mcp; never
+  `resolve-library-id` is no longer used. Separate access grant from appse-ai-mcp; never
   conflate the two.
 - **appse ai platform** is where workflows are created, stored, and run.
 
@@ -119,7 +120,7 @@ claude mcp add-json --scope project context7 "{\"type\":\"stdio\",\"command\":\"
 ```
 
 ## Testing in Cowork (browser)
-- **arise-mcp:** already available through the same claude.ai connectors — check
+- **appse-ai-mcp:** already available through the same claude.ai connectors — check
   Settings → Connectors.
 - **Context7:** also shows up as its own claude.ai connector ("Context7"), separate
   from the local `.mcp.json` entry used for Claude Code dev — confirmed authorized
@@ -136,7 +137,8 @@ claude mcp add-json --scope project context7 "{\"type\":\"stdio\",\"command\":\"
   pasted copy.
 
 ## Tool permissions (`.claude/settings.json`)
-Pre-approved: all read-only arise-mcp tools (including `get_node_data`),
+Pre-approved: all read-only appse-ai-mcp tools (including `get_node_data` and
+`list_executions`),
 `save_workflow`, and Context7's `query-docs` — under **both** connector prefixes,
 `mcp__context7__` (local `.mcp.json`, Claude Code dev) and `mcp__claude_ai_Context7__`
 (claude.ai connector, used in Cowork). Also pre-approved: `Read` on
@@ -144,9 +146,10 @@ Pre-approved: all read-only arise-mcp tools (including `get_node_data`),
 skill's own files doesn't prompt. Deliberately **not** pre-approved: `create_workflow`
 — it uses a workflow from the partner's allocation, so it keeps its own prompt as a
 second safety layer after the skill's Step 9 confirmation. `resolve-library-id` can be
-removed from the allowlist under both prefixes (unused now). The real rule prefix for
-arise-mcp is `mcp__claude_ai_arise-mcp__<tool>` (from Claude Code's own output — don't
-guess it).
+removed from the allowlist under both prefixes (unused now). The rule prefix for
+appse-ai-mcp via `.mcp.json` is `mcp__appse-ai-mcp__<tool>`; the claude.ai connector uses a
+different prefix (`mcp__claude_ai_mcp_appse_ai__`). Take it from Claude Code's own output —
+don't guess it — and enable only one of the two so the allowlist matches a single prefix.
 
 ## POC status
 - **Plumbing tests** (`hello-appse-ai`, `list-workflows-test`) — passed.
@@ -163,19 +166,23 @@ guess it).
   single source of truth for the steps.
 
 ## Org switching and environment notes
-- **Per-org login:** whichever email authenticates arise-mcp decides the single org
-  visible in that session. Current testing uses **Build Verification Org**
-  (`d06d36cf-9579-45f1-bf32-bd24cc0c879b`). Don't expect data from an earlier org —
-  check `list_organizations`.
+- **Per-org login:** whichever email authenticates appse-ai-mcp decides which orgs are
+  visible in that session. Never assume an org, and don't keep org names or IDs in this
+  file — call `list_organizations` every run and use the current org, or ask if more than
+  one fits. Don't expect data from an org used in earlier testing.
+- **Sign-in via `.mcp.json` is blocked (2026-10-28).** Claude Code's `/mcp` sign-in
+  for `appse-ai-mcp` fails with `invalid_redirect_uri` — the server requires a
+  `127.0.0.1` callback, not `localhost`. Needs a fix on the `mcp.appse.ai` side. Until
+  then, use the `claude.ai` connector (prefix `mcp__claude_ai_mcp_appse_ai__`; the
+  allowlist in `.claude/settings.json` matches only `mcp__appse-ai-mcp__*`).
 - **Two different "Workflow 12"s — don't mix them up.** The one in
-  `docs/workflow-creator-known-limits.md` (the 53,080-record incident) is in Build
-  Verification Org. A
-  separate empty stub also named "Workflow 12"
-  (`f9e89e78-d060-4342-afc2-84b220f11794`) sits in the earlier test org; delete it in
-  the UI if testing returns there (no arise-mcp tool can delete a workflow).
-- **UI outages don't affect builds.** Confirmed with dev: arise-mcp writes to the same
-  database the UI reads from, no caching. During a real `workflow.insync.top` outage,
-  arise-mcp kept working. A build during an outage is safe; only visual verification
+  `docs/workflow-creator-known-limits.md` (the 53,080-record incident) is in the org
+  used for that incident. A separate empty stub also named "Workflow 12"
+  (`f9e89e78-d060-4342-afc2-84b220f11794`) sits in an earlier test org; delete it in
+  the UI if testing returns there (no appse-ai-mcp tool can delete a workflow).
+- **UI outages don't affect builds.** Confirmed with dev: appse-ai-mcp writes to the same
+  database the UI reads from, no caching. During a real UI outage,
+  appse-ai-mcp kept working. A build during an outage is safe; only visual verification
   is delayed.
 
 ## Guardrails (apply to every skill in this repo)
@@ -184,7 +191,7 @@ guess it).
   Docs decide meaning, the live operation detail decides required fields,
   `conventions.md` decides the saved JSON; if none resolves it, ask.
 - **Never let a skill expand its own tool access mid-run.** Fix the `SKILL.md`
-  deliberately afterwards. Keep each grant (arise-mcp, Context7, local files)
+  deliberately afterwards. Keep each grant (appse-ai-mcp, Context7, local files)
   separate and narrow. Never read another workflow's logic to work around a gap.
 - **Operations:** release and preview are fine; never dev.
 - **Follow the data flow:** a node reads from the node that shaped its record — never
@@ -203,7 +210,7 @@ guess it).
 ## Next actions
 1. Open Cowork's Customize/Settings menu to confirm which upload surface is real
    (skill zip vs. plugin package — see Testing in Cowork) before packaging.
-2. Package `skills/workflow-creator` only, upload it, confirm arise-mcp and the
+2. Package `skills/workflow-creator` only, upload it, confirm appse-ai-mcp and the
    Context7 connector both work there, and run one branching scenario end to end.
 3. Open the PR to `main` once the Cowork run is confirmed.
 4. Decide `plugin.json`'s real author/support email before external distribution.
