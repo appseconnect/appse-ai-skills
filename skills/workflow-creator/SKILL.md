@@ -3,17 +3,17 @@ name: workflow-creator
 description: >
   Builds one or more appse ai workflows — each a trigger in one connected app
   that creates, updates, or reconciles records in another connected app —
-  via arise-mcp. Use when the user asks to create, build, or sync a workflow
+  via appse-ai-mcp. Use when the user asks to create, build, or sync a workflow
   (or a set of workflows, e.g. "the full sales cycle") between named apps for
   a named entity. Presents a plan of the workflow(s) needed — including which
   structural pattern each one requires (simple sync, dedupe-and-skip,
   create-or-update, SKU/item reconciliation, parallel branching, or a custom
-  flow composed from the scenario's business rules when no known pattern
+  flow from the scenario's business rules when no known pattern
   fits) — and lets the user decide the final count and combination before
   building.
   Always confirms org, app connections, and field mappings before writing
   anything. Source app, target app, and entity type are supplied by the user
-  each run — none are hardcoded. Works straight from a plain scenario or
+  each run — none are hardcoded. Works from a plain scenario or
   requirements brief (e.g. "When X happens in App A, do Y in App B … Build
   it in {org}") — no Discovery Summary or SOW is needed first.
 ---
@@ -89,7 +89,7 @@ needs them, and ask every open question in one round inside Step 9.
   documentation"). Cut meta-commentary about what you can't do — state the
   underlying fact instead.
 - **Never name internal tools or systems in partner-facing text** —
-  arise-mcp, Context7, MCP tool names, "the skill", "the reference
+  appse-ai-mcp, Context7, MCP tool names, "the skill", "the reference
   workflow". Say it in business terms: *"This workflow is currently named
   'Workflow 9' — rename it to something clearer next time you're in the
   appse ai UI"*, not *"the tool doesn't expose a rename"*. Applies to Step 9,
@@ -753,15 +753,11 @@ re-check; report anything still wrong — do not tell the partner the build
 is complete.
 
 ### Step 11 — Report Back Plainly
-**Lead with a clickable link to open the workflow** in the appse ai
-editor, built from the workflow ID returned by `create_workflow`:
-
-> **Open it here:** https://workflow.insync.top/workflows/{workflowId}/editor
-
-Use the real ID, as a full clickable URL (not just the ID). If several
-workflows were built from Step 0, give one link per workflow, each labelled
-with what it does. Give the same link again whenever you later update that
-workflow (e.g. after a mapping change).
+**Lead with the workflow name and ID** (and the org it was built in), so the
+partner can find it in the appse ai editor. Use the real values returned by
+`create_workflow`. If several workflows were built from Step 0, give one
+entry per workflow, each labelled with what it does. Give the same details
+again whenever you later update that workflow (e.g. after a mapping change).
 
 Then state: workflow name and ID, exact trigger and action used, every field
 mapping applied, and which mappings were documentation-confirmed,
@@ -794,7 +790,7 @@ of what an internal tool does or doesn't support (see Tone).
 
 ## Allowed Tools
 *(Internal — not partner-facing.)*
-- **arise-mcp:** `list_organizations`, `list_apps`, `list_credentials`,
+- **appse-ai-mcp:** `list_organizations`, `list_apps`, `list_credentials`,
   `list_operations`, `get_operation_detail`, `list_workflows`,
   `create_workflow`, `save_workflow`, and `get_workflow` — **restricted to
   exactly one target: the workflow this run created** — to verify it
@@ -806,7 +802,7 @@ of what an internal tool does or doesn't support (see Tone).
   integration pages (`docs/app_integrations/`), expressions
   (`docs/platform/key_concepts/expressions_mapping/`), and node pages
   (`docs/platform/key_concepts/nodes/`). No library lookup step is needed.
-  A separate grant from arise-mcp — never use one to justify expanding the
+  A separate grant from appse-ai-mcp — never use one to justify expanding the
   other.
 - **Local files:** this skill's own `references/` folder only — the
   `pattern-*.md` files, `conventions.md`, and the `guide-*.md` notes. Never read or infer structure from anywhere else.
