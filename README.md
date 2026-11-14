@@ -11,7 +11,7 @@ It targets two problems:
   can confidently scope or build.
 
 > Standalone plugin — no `appse-core`. Skills reach the appse ai platform only through
-> **arise-mcp**, which must be connected in your AI tool before any skill runs.
+> **appse-ai-mcp**, which must be connected in your AI tool before any skill runs.
 
 Status: **POC** on branch `partner-accelerator-poc`. Not yet listed in
 [appse-marketplace](https://github.com/appseconnect/appse-marketplace).
@@ -22,7 +22,7 @@ Status: **POC** on branch `partner-accelerator-poc`. Not yet listed in
 
 | # | Skill | Use it when | Status |
 |---|-------|-------------|--------|
-| 1 | **`/partner-init`** | First run — confirms arise-mcp is connected and which org to use. | Placeholder |
+| 1 | **`/partner-init`** | First run — confirms appse-ai-mcp is connected and which org to use. | Placeholder |
 
 Planned: `partner-workflow-build`, `partner-requirement-digest`, `partner-sow-generator`,
 `partner-scenario-advisor`.
@@ -60,7 +60,7 @@ Every skill must follow these. Copy this list into each skill's
 2. **Never guess a data shape or field mapping.** If the structure or fields can't be
    retrieved, stop and ask — or use a clearly labeled, named fallback and flag it as
    an assumption to verify. Never silently invent.
-3. **Narrow, explicit tool whitelist.** Each SKILL.md lists exactly which arise-mcp
+3. **Narrow, explicit tool whitelist.** Each SKILL.md lists exactly which appse-ai-mcp
    tools it may use, and nothing else.
 4. **Never expand tool access mid-run.** If the whitelist is too narrow, stop. Fix the
    SKILL.md deliberately afterward.

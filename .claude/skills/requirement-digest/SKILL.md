@@ -3,7 +3,7 @@ name: requirement-digest
 description: >
   Turns messy discovery-call material — transcripts, notes, emails — into a
   structured, confidence-tagged scoping digest (shown to partners as the
-  "Discovery Summary") via arise-mcp app-catalog cross-checks. Use for
+  "Discovery Summary") via appse-ai-mcp app-catalog cross-checks. Use for
   "summarize this call," "digest these notes," "write a discovery summary,"
   "turn this into requirements," or — before a discovery call has happened —
   for a Call Prep Checklist ("what should I ask on my call?", "help me prepare
@@ -63,7 +63,7 @@ labels shown to the partner change.
 
 ---
 
-## Tool Reference (arise-mcp, read-only)
+## Tool Reference (appse-ai-mcp, read-only)
 
 This skill's only platform tool is `list_apps`, used once, in Step 4, to
 cross-check each app named in the discovery material against appse ai's
@@ -72,7 +72,7 @@ if `org_id` isn't given, or the lookup isn't available, skip it and mark
 Apps Involved as **not cross-checked against the catalog** rather than
 stalling or guessing a `code`.
 
-No other arise-mcp tool is used. This skill never creates, saves, or
+No other appse-ai-mcp tool is used. This skill never creates, saves, or
 modifies a workflow — that is a separate skill (`workflow-creator`)
 downstream of this one's output.
 
@@ -344,11 +344,11 @@ Summary."_
 
 ## Allowed Tools
 
-### arise-mcp — read-only
+### appse-ai-mcp — read-only
 
 list_apps → used only in Step 4, to cross-check named apps against the catalog; never used to modify anything
 
-No other arise-mcp tool is used by this skill. Never call `create_workflow`,
+No other appse-ai-mcp tool is used by this skill. Never call `create_workflow`,
 `save_workflow`, or anything else that writes — that is entirely out of
 scope here, regardless of what the discovery material describes wanting
 built.
